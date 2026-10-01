@@ -558,33 +558,130 @@ export function drawDesign(
     ctx.fill("evenodd");
     ctx.restore();
   };
-  // One lit rim: the sliver of the body left uncovered by a copy of itself
-  // nudged by (dx, dy). It hugs the outline, so curves and chamfers shade
-  // correctly instead of following the bounding box.
-  const rim = (dx: number, dy: number, color: string) => {
-    ctx.save();
-    body();
-    ctx.clip();
-    ctx.beginPath();
-    path(offset, 0, true);
-    ctx.translate(dx, dy);
-    path(offset, 0, true);
-    ctx.translate(-dx, -dy);
-    ctx.fillStyle = color;
-    ctx.fill("evenodd");
-    ctx.restore();
-  };
-  // Bevel lighting from the top left: bright top, lighter left, dark bottom,
-  // dimmer right. Inverted for sunken surfaces.
+  // Bevel lighting on a ring of uniform width just inside the edge, lit from
+  // the top left. Straight edges take flat faces split by 45° miters, arcs
+  // blend the two neighbouring faces around their own centre, and chamfers
+  // take the flat tone in between. Inverted for sunken surfaces.
   const faces = (width: number, strength: number, inverted: boolean) => {
     const b = Math.min(width, Math.min(w, h) / 2 - 1);
     if (b <= 0 || strength <= 0) return;
-    const light = (a: number) => `rgba(255,255,255,${a})`,
-      dark = (a: number) => `rgba(0,0,0,${a})`;
-    rim(0, b, inverted ? dark(strength) : light(strength));
-    rim(b, 0, inverted ? dark(strength * 0.55) : light(strength * 0.55));
-    rim(0, -b, inverted ? light(strength * 0.7) : dark(strength * 0.8));
-    rim(-b, 0, inverted ? light(strength * 0.4) : dark(strength * 0.45));
+    const sign = inverted ? -1 : 1;
+    // Lighting value by edge direction: +1 faces the light, -1 faces away.
+    const shade = (v: number) =>
+      v * sign >= 0
+        ? `rgba(255,255,255,${Math.abs(v) * strength})`
+        : `rgba(0,0,0,${Math.abs(v) * strength})`;
+    const vTop = 1,
+      vLeft = 0.55,
+      vBottom = -0.8,
+      vRight = -0.45;
+    const x0 = p,
+      y0 = p + offset,
+      x1 = p + w,
+      y1 = p + offset + h,
+      m = Math.min(w, h) / 2,
+      cut = d.shape === "cut",
+      reach = b + 2,
+      radii = corners.map((r) => Math.max(0, Math.min(r, m)));
+    const poly = (pts: number[][]) => {
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.closePath();
+    };
+    // The part of the ring that belongs to one corner: a square around an
+    // arc, or the band directly in front of a chamfer.
+    const cornerRegion = (corner: number) => {
+      const r = radii[corner];
+      if (r <= 0) return;
+      if (!cut) {
+        if (corner === 0) ctx.rect(x0, y0, r, r);
+        else if (corner === 1) ctx.rect(x1 - r, y0, r, r);
+        else if (corner === 2) ctx.rect(x1 - r, y1 - r, r, r);
+        else ctx.rect(x0, y1 - r, r, r);
+      } else if (corner === 0)
+        poly([
+          [x0 + r, y0],
+          [x0, y0 + r],
+          [x0 + reach, y0 + r + reach],
+          [x0 + r + reach, y0 + reach],
+        ]);
+      else if (corner === 1)
+        poly([
+          [x1 - r, y0],
+          [x1, y0 + r],
+          [x1 - reach, y0 + r + reach],
+          [x1 - r - reach, y0 + reach],
+        ]);
+      else if (corner === 2)
+        poly([
+          [x1, y1 - r],
+          [x1 - r, y1],
+          [x1 - r - reach, y1 - reach],
+          [x1 - reach, y1 - r - reach],
+        ]);
+      else
+        poly([
+          [x0 + r, y1],
+          [x0, y1 - r],
+          [x0 + reach, y1 - r - reach],
+          [x0 + r + reach, y1 - reach],
+        ]);
+    };
+    ctx.save();
+    body();
+    ctx.clip();
+    path(offset, 0);
+    path(offset, b, true);
+    ctx.clip("evenodd");
+    // Straight edges: everything outside the corner regions.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x0 - 1, y0 - 1, w + 2, h + 2);
+    [0, 1, 2, 3].forEach(cornerRegion);
+    ctx.clip("evenodd");
+    const wedge = (pts: number[][], v: number) => {
+      ctx.beginPath();
+      poly(pts);
+      ctx.fillStyle = shade(v);
+      ctx.fill();
+    };
+    wedge([[x0, y0], [x1, y0], [x1 - m, y0 + m], [x0 + m, y0 + m]], vTop);
+    wedge([[x1, y0], [x1, y1], [x1 - m, y1 - m], [x1 - m, y0 + m]], vRight);
+    wedge([[x1, y1], [x0, y1], [x0 + m, y1 - m], [x1 - m, y1 - m]], vBottom);
+    wedge([[x0, y1], [x0, y0], [x0 + m, y0 + m], [x0 + m, y1 - m]], vLeft);
+    ctx.restore();
+    // Corners. Conic angles run clockwise from +x, so left is π and up is 3π/2.
+    const blends: [number, number, number][] = [
+      [Math.PI, vLeft, vTop],
+      [Math.PI * 1.5, vTop, vRight],
+      [0, vRight, vBottom],
+      [Math.PI / 2, vBottom, vLeft],
+    ];
+    const centers = [
+      [x0 + radii[0], y0 + radii[0]],
+      [x1 - radii[1], y0 + radii[1]],
+      [x1 - radii[2], y1 - radii[2]],
+      [x0 + radii[3], y1 - radii[3]],
+    ];
+    [0, 1, 2, 3].forEach((corner) => {
+      if (radii[corner] <= 0) return;
+      const [start, from, to] = blends[corner];
+      ctx.save();
+      ctx.beginPath();
+      cornerRegion(corner);
+      ctx.clip();
+      if (cut) ctx.fillStyle = shade((from + to) / 2);
+      else {
+        const [cx, cy] = centers[corner];
+        const g = ctx.createConicGradient(start, cx, cy);
+        g.addColorStop(0, shade(from));
+        g.addColorStop(0.25, shade(to));
+        g.addColorStop(1, shade(from));
+        ctx.fillStyle = g;
+      }
+      ctx.fillRect(x0, y0, w, h);
+      ctx.restore();
+    });
+    ctx.restore();
   };
   // Glass sheen across the top half.
   const gloss = (strength: number) => {
