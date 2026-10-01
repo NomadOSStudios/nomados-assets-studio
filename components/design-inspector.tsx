@@ -1,5 +1,5 @@
 "use client";
-import { Scan, Settings2, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Range, Color, Choice, NumberField } from "./studio-controls";
 import type { BorderPosition, Design, Surface } from "@/lib/studio";
@@ -29,7 +29,6 @@ export function DesignInspector({
       <section className="property-section">
         <div className="section-heading">
           <h3>Dimensions</h3>
-          <Scan size={15} />
         </div>
         <div className="two-fields">
           <NumberField
@@ -86,11 +85,14 @@ export function DesignInspector({
       <section className="property-section">
         <div className="section-heading">
           <h3>Fill</h3>
-          <Switch
-            aria-label="Gradient fill"
-            checked={d.gradient}
-            onCheckedChange={(gradient) => patch({ gradient })}
-          />
+          <label className="heading-toggle" htmlFor="gradient-fill">
+            Gradient
+            <Switch
+              id="gradient-fill"
+              checked={d.gradient}
+              onCheckedChange={(gradient) => patch({ gradient })}
+            />
+          </label>
         </div>
         <div
           className="gradient-preview"
@@ -178,8 +180,8 @@ export function DesignInspector({
       <section className="property-section">
         <div className="section-heading">
           <h3>Depth & lighting</h3>
-          <Settings2 size={15} />
         </div>
+        <div className="field-label">Surface</div>
         <Choice
           label="Surface style"
           value={d.surface}
@@ -224,53 +226,64 @@ export function DesignInspector({
       <section className="property-section">
         <div className="section-heading">
           <h3>Text & icon</h3>
-          <Switch
-            aria-label="Show label"
-            checked={d.includeText}
-            onCheckedChange={(includeText) => patch({ includeText })}
+          <label className="heading-toggle" htmlFor="show-text">
+            Show text
+            <Switch
+              id="show-text"
+              checked={d.includeText}
+              onCheckedChange={(includeText) => patch({ includeText })}
+            />
+          </label>
+        </div>
+        <div className={d.includeText ? undefined : "is-dimmed"}>
+          <input
+            className="text-input no-margin"
+            aria-label="Label text"
+            placeholder="Label text"
+            value={d.text}
+            maxLength={120}
+            onChange={(e) => patch({ text: e.target.value })}
+          />
+          <div className="mt-3">
+            <Choice
+              label="Font family"
+              value={d.font}
+              options={[
+                "Arial",
+                "Verdana",
+                "Georgia",
+                "Trebuchet MS",
+                "Courier New",
+              ].map((v) => ({ value: v, label: v }))}
+              onChange={(font) => patch({ font })}
+            />
+          </div>
+          <Range
+            label="Font size"
+            value={d.fontSize}
+            min={10}
+            max={96}
+            onChange={(fontSize) => patch({ fontSize })}
+          />
+          <div className="toggle-row">
+            <label htmlFor="bold-label">Bold text</label>
+            <Switch
+              id="bold-label"
+              checked={d.bold}
+              onCheckedChange={(bold) => patch({ bold })}
+            />
+          </div>
+          <Color
+            label="Text color"
+            value={d.textColor}
+            onChange={(textColor) => patch({ textColor })}
           />
         </div>
-        <input
-          className="text-input no-margin"
-          aria-label="Button label"
-          value={d.text}
-          maxLength={120}
-          onChange={(e) => patch({ text: e.target.value })}
-        />
-        <div className="mt-3">
-          <Choice
-            label="Font family"
-            value={d.font}
-            options={[
-              "Arial",
-              "Verdana",
-              "Georgia",
-              "Trebuchet MS",
-              "Courier New",
-            ].map((v) => ({ value: v, label: v }))}
-            onChange={(font) => patch({ font })}
-          />
-        </div>
-        <Range
-          label="Font size"
-          value={d.fontSize}
-          min={10}
-          max={96}
-          onChange={(fontSize) => patch({ fontSize })}
-        />
-        <div className="toggle-row">
-          <label htmlFor="bold-label">Bold label</label>
-          <Switch
-            id="bold-label"
-            checked={d.bold}
-            onCheckedChange={(bold) => patch({ bold })}
-          />
-        </div>
-        <Color
-          label="Text color"
-          value={d.textColor}
-          onChange={(textColor) => patch({ textColor })}
-        />
+        {!d.includeText && (
+          <p className="help-text">
+            Text is hidden in previews and exports. The icon still shows.
+          </p>
+        )}
         <div className="mt-3">
           <Choice
             label="Icon"

@@ -24,6 +24,10 @@ import {
   PenTool,
   BookmarkPlus,
   AlertCircle,
+  RectangleHorizontal,
+  Pencil,
+  FilePlus2,
+  X,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -45,7 +49,7 @@ import { toast } from "sonner";
 import { AssetCanvas, Choice, NumberField } from "./studio-controls";
 import { DesignInspector } from "./design-inspector";
 import { ExportOptions, type ExportSettings } from "./export-options";
-import { EffectWorkspace } from "./effect-workspace";
+import { EffectWorkspace, type EffectFormat } from "./effect-workspace";
 import { ScenePreview } from "./scene-preview";
 import { ScreenInspector } from "./screen-inspector";
 import {
@@ -76,11 +80,23 @@ import {
   styleValues,
   designSchema,
   type Project,
-  type Effect,
 } from "@/lib/project";
-import { exportAssets } from "@/lib/exports";
+
+import { exportAssets, exportEffect } from "@/lib/exports";
 
 type History = { past: Project[]; present: Project; future: Project[] };
+const kindIcons = {
+  button: MousePointer2,
+  panel: PanelTop,
+  slot: Square,
+  bar: RectangleHorizontal,
+} as const;
+const kindLabels: Record<AssetKind, string> = {
+  button: "Button",
+  panel: "Panel",
+  slot: "Slot",
+  bar: "Bar",
+};
 export default function Studio() {
   const [history, setHistory] = useState<History>({
     past: [],
@@ -109,6 +125,8 @@ export default function Studio() {
       content: true,
     }),
     [guides, setGuides] = useState(false);
+  const [effectFormat, setEffectFormat] = useState<EffectFormat>("sheet"),
+    [effectProgress, setEffectProgress] = useState<number | null>(null);
   const [styleOpen, setStyleOpen] = useState(false),
     [styleName, setStyleName] = useState(""),
     [renameOpen, setRenameOpen] = useState(false),
@@ -234,6 +252,44 @@ export default function Studio() {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [undo, redo]);
+  // Editing shortcuts. Re-subscribed each render so handlers never go stale.
+  useEffect(() => {
+    function key(e: KeyboardEvent) {
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (
+        target &&
+        (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
+          target.isContentEditable)
+      )
+        return;
+      if (
+        document.querySelector(
+          '[data-state="open"]:is([role="dialog"], [role="menu"], [role="listbox"])',
+        )
+      )
+        return;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d") {
+        if (
+          mode === "effects" ||
+          (mode === "scene" && screenInspector !== "asset")
+        )
+          return;
+
+        e.preventDefault();
+        duplicate();
+        return;
+      }
+      if (mode !== "scene" || screenInspector !== "asset") return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        remove();
+      } else if (e.key === "Escape") {
+        setScreenInspector("screen");
+      }
+    }
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  });
   useEffect(() => {
     const context = (
       document as Document & {
@@ -452,6 +508,30 @@ export default function Studio() {
     setSelected(assets.find((a) => a.id !== d.id)!.id);
     toast("Asset removed", { action: { label: "Undo", onClick: undo } });
   }
+  function newProject() {
+    change(() => initialProject, false);
+    setSelected(initialProject.assets[0].id);
+    setMode("asset");
+    setInspector("design");
+    toast("Started a new project", {
+      action: { label: "Undo", onClick: undo },
+    });
+  }
+  function removeStyle(name: string) {
+    change(
+      (p) => ({
+        ...p,
+        styles: p.styles.filter((s) => s.name !== name),
+        assets: p.assets.map((a) =>
+          a.themeId === name ? { ...a, themeId: undefined } : a,
+        ),
+      }),
+      false,
+    );
+    toast("Saved style removed", {
+      action: { label: "Undo", onClick: undo },
+    });
+  }
   function saveFile() {
     download(
       new Blob([JSON.stringify(project, null, 2)], {
@@ -633,8 +713,27 @@ export default function Studio() {
       setBusy(false);
     }
   }
+  async function runEffectExport() {
+    setEffectProgress(0);
+    try {
+      const zip = await exportEffect(
+        project.effect,
+        effectFormat,
+        setEffectProgress,
+      );
+      download(zip, `${project.effect.type}-${effectFormat}.zip`);
+      toast.success("Animation exported");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Animation export failed",
+      );
+    } finally {
+      setEffectProgress(null);
+    }
+  }
   const exportProps = {
     design: d,
+    state,
     settings: exportSettings,
     onChange: (v: Partial<ExportSettings>) =>
       setExportSettings((s) => ({ ...s, ...v })),
@@ -686,13 +785,17 @@ export default function Studio() {
                 setRenameOpen(true);
               }}
             >
-              Rename project
+              <Pencil size={15} /> Rename project
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={saveFile}>
               <Save size={15} /> Save project file
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => fileRef.current?.click()}>
               <FolderOpen size={15} /> Open project file
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={newProject}>
+              <FilePlus2 size={15} /> New project
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <div className="menu-note">
@@ -714,20 +817,22 @@ export default function Studio() {
           <button
             className="primary-button"
             onClick={() => {
-              if (mode === "effects") {
-                toast.info("Use Export animation ZIP in the effect settings.");
-              } else if (mode === "scene") {
-                void exportScreen();
-              } else setExportOpen(true);
+              if (mode === "effects") void runEffectExport();
+              else if (mode === "scene") void exportScreen();
+              else setExportOpen(true);
             }}
-            disabled={!ready || busy}
+            disabled={!ready || busy || effectProgress !== null}
           >
             <Download size={16} />{" "}
-            {mode === "scene"
-              ? busy
-                ? "Exporting…"
-                : "Export screen"
-              : "Export assets"}
+            {mode === "effects"
+              ? effectProgress === null
+                ? "Export animation"
+                : `Exporting ${effectProgress}%`
+              : mode === "scene"
+                ? busy
+                  ? "Exporting…"
+                  : "Export screen"
+                : "Export assets"}
           </button>
         </div>
       </header>
@@ -742,6 +847,7 @@ export default function Studio() {
                 <button
                   className="icon-button"
                   aria-label="Add asset"
+                  title="Add asset"
                   disabled={!ready}
                 >
                   <Plus size={18} />
@@ -749,40 +855,47 @@ export default function Studio() {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 {(["button", "panel", "slot", "bar"] as AssetKind[]).map(
-                  (kind) => (
-                    <DropdownMenuItem
-                      key={kind}
-                      onSelect={() => addAsset(kind)}
-                    >
-                      Add {kind === "bar" ? "progress bar" : kind}
-                    </DropdownMenuItem>
-                  ),
+                  (kind) => {
+                    const Icon = kindIcons[kind];
+                    return (
+                      <DropdownMenuItem
+                        key={kind}
+                        onSelect={() => addAsset(kind)}
+                      >
+                        <Icon size={15} /> Add{" "}
+                        {kind === "bar" ? "progress bar" : kind}
+                      </DropdownMenuItem>
+                    );
+                  },
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           <div className="asset-list">
-            {assets.map((a) => (
-              <button
-                key={a.id}
-                className={`asset-row ${d.id === a.id && (mode !== "scene" || screenInspector === "asset") ? "selected" : ""}`}
-                onClick={() => {
-                  setSelected(a.id);
-                  if (mode === "effects") setMode("asset");
-                  if (mode === "scene") setScreenInspector("asset");
-                }}
-              >
-                {a.kind === "button" ? (
-                  <MousePointer2 size={17} />
-                ) : a.kind === "panel" ? (
-                  <PanelTop size={17} />
-                ) : (
-                  <Square size={17} />
-                )}
-                <span title={a.name}>{a.name}</span>
-                <span className="asset-extension">PNG</span>
-              </button>
-            ))}
+            {assets.map((a) => {
+              const Icon = kindIcons[a.kind];
+              const active =
+                d.id === a.id &&
+                mode !== "effects" &&
+                (mode !== "scene" || screenInspector === "asset");
+              return (
+                <button
+                  key={a.id}
+                  className={`asset-row ${active ? "selected" : ""}`}
+                  title={`${a.name} · ${a.width} × ${a.height} px`}
+                  aria-current={active ? "true" : undefined}
+                  onClick={() => {
+                    setSelected(a.id);
+                    if (mode === "effects") setMode("asset");
+                    if (mode === "scene") setScreenInspector("asset");
+                  }}
+                >
+                  <Icon size={17} />
+                  <span>{a.name}</span>
+                  <span className="asset-kind">{kindLabels[a.kind]}</span>
+                </button>
+              );
+            })}
           </div>
           <div className="sidebar-section-title">
             <Palette size={15} />
@@ -790,6 +903,7 @@ export default function Studio() {
             <button
               className="icon-button"
               aria-label="Save current style"
+              title="Save the selected asset's look as a style"
               onClick={() => {
                 setStyleName("");
                 setStyleOpen(true);
@@ -802,32 +916,47 @@ export default function Studio() {
             A starting point. Make it yours.
           </p>
           <div className="preset-grid">
-            {allStyles.map((p) => (
-              <button
-                key={p.name}
-                className={`preset-card ${d.themeId === p.name ? "active" : ""}`}
-                onClick={() => {
-                  patch({ ...p.values, themeId: p.name });
-                  if (mode !== "scene") setMode("asset");
-                }}
-              >
-                <div className="preset-art">
-                  <AssetCanvas
-                    design={{
-                      ...baseDesign,
-                      ...p.values,
-                      width: 180,
-                      height: 64,
-                      text: "Aa",
-                      icon: "",
-                      fontSize: 24,
+            {allStyles.map((p) => {
+              const custom = project.styles.some((s) => s.name === p.name);
+              return (
+                <div key={p.name} className="preset-slot">
+                  <button
+                    className={`preset-card ${d.themeId === p.name && mode !== "effects" ? "active" : ""}`}
+                    title={`Apply ${p.name} to ${d.name}`}
+                    onClick={() => {
+                      patch({ ...p.values, themeId: p.name });
+                      if (mode !== "scene") setMode("asset");
                     }}
-                  />
+                  >
+                    <div className="preset-art">
+                      <AssetCanvas
+                        design={{
+                          ...baseDesign,
+                          ...p.values,
+                          width: 180,
+                          height: 64,
+                          text: "Aa",
+                          icon: "",
+                          fontSize: 24,
+                        }}
+                      />
+                    </div>
+                    <strong>{p.name}</strong>
+                    <small>{p.label}</small>
+                  </button>
+                  {custom && (
+                    <button
+                      className="icon-button preset-remove"
+                      aria-label={`Delete style ${p.name}`}
+                      title="Delete saved style"
+                      onClick={() => removeStyle(p.name)}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
                 </div>
-                <strong>{p.name}</strong>
-                <small>{p.label}</small>
-              </button>
-            ))}
+              );
+            })}
           </div>
           {project.styles.some((s) => s.name === d.themeId) && (
             <button
@@ -886,6 +1015,10 @@ export default function Studio() {
             onChange={(v) =>
               change((p) => ({ ...p, effect: { ...p.effect, ...v } }))
             }
+            format={effectFormat}
+            onFormat={setEffectFormat}
+            progress={effectProgress}
+            onExport={runEffectExport}
           />
         ) : (
           <>
@@ -899,6 +1032,7 @@ export default function Studio() {
                   <button
                     className="icon-button"
                     aria-label="Duplicate asset"
+                    title="Duplicate (⌘D)"
                     onClick={duplicate}
                     disabled={mode === "scene" && screenInspector !== "asset"}
                   >
@@ -907,6 +1041,9 @@ export default function Studio() {
                   <button
                     className="icon-button"
                     aria-label="Delete asset"
+                    title={
+                      mode === "scene" ? "Delete (⌫)" : "Delete asset"
+                    }
                     disabled={
                       assets.length === 1 ||
                       (mode === "scene" && screenInspector !== "asset")
@@ -1004,6 +1141,7 @@ export default function Studio() {
                           key={b}
                           className={`${b} ${background === b ? "chosen" : ""}`}
                           aria-label={`${b} canvas background`}
+                          title={`${b[0].toUpperCase() + b.slice(1)} background (preview only)`}
                           onClick={() => setBackground(b)}
                         />
                       ))}
@@ -1012,7 +1150,7 @@ export default function Studio() {
                   {mode !== "scene" && <span className="toolbar-divider" />}
                   <span>
                     {mode === "scene"
-                      ? "Drag to arrange · Click empty space for screen settings"
+                      ? "Drag to arrange · Arrow keys nudge · ⌫ deletes · Click empty space for screen settings"
                       : "Preview background"}
                   </span>
                 </div>
@@ -1070,7 +1208,7 @@ export default function Studio() {
                 <span>
                   {mode === "scene"
                     ? `${screen.width} × ${screen.height} · PNG`
-                    : "PNG · Transparent background"}
+                    : `Exports ${d.width + padding(d) * 2} × ${d.height + padding(d) * 2 + d.depth} px at 1× · transparent PNG`}
                 </span>
               </footer>
             </section>

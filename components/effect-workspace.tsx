@@ -3,22 +3,26 @@ import { useEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, Shuffle, Download } from "lucide-react";
 import { Range, Color, Choice, NumberField } from "./studio-controls";
 import { drawEffect } from "@/lib/effects";
-import { exportEffect } from "@/lib/exports";
-import { download } from "@/lib/studio";
 import type { Effect } from "@/lib/project";
-import { toast } from "sonner";
+export type EffectFormat = "sheet" | "sequence";
 export function EffectWorkspace({
   effect: e,
   onChange,
+  format,
+  onFormat,
+  progress,
+  onExport,
 }: {
   effect: Effect;
   onChange: (v: Partial<Effect>) => void;
+  format: EffectFormat;
+  onFormat: (v: EffectFormat) => void;
+  progress: number | null;
+  onExport: () => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null),
     [playing, setPlaying] = useState(true),
     [time, setTime] = useState(0),
-    [format, setFormat] = useState<"sheet" | "sequence">("sheet"),
-    [progress, setProgress] = useState<number | null>(null),
     timeRef = useRef(0);
   useEffect(() => {
     timeRef.current = Math.min(timeRef.current, e.duration);
@@ -46,20 +50,6 @@ export function EffectWorkspace({
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [e, playing]);
-  async function exportFrames() {
-    setProgress(0);
-    try {
-      const zip = await exportEffect(e, format, setProgress);
-      download(zip, `${e.type}-${format}.zip`);
-      toast.success("Animation exported");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Animation export failed",
-      );
-    } finally {
-      setProgress(null);
-    }
-  }
   return (
     <>
       <section className="workspace effect-workspace">
@@ -97,6 +87,7 @@ export function EffectWorkspace({
             <button
               className="icon-button"
               aria-label={playing ? "Pause animation" : "Play animation"}
+              title={playing ? "Pause" : "Play"}
               onClick={() => setPlaying(!playing)}
             >
               {playing ? <Pause size={18} /> : <Play size={18} />}
@@ -104,6 +95,7 @@ export function EffectWorkspace({
             <button
               className="icon-button"
               aria-label="Restart animation"
+              title="Restart"
               onClick={() => {
                 timeRef.current = 0;
                 setTime(0);
@@ -266,7 +258,7 @@ export function EffectWorkspace({
                   { value: "sheet", label: "PNG sprite sheets" },
                   { value: "sequence", label: "PNG frame sequence" },
                 ]}
-                onChange={(v) => setFormat(v as typeof format)}
+                onChange={(v) => onFormat(v as EffectFormat)}
               />
             </div>
             <p className="help-text">
@@ -279,7 +271,7 @@ export function EffectWorkspace({
             <button
               className="primary-button full"
               disabled={progress !== null}
-              onClick={exportFrames}
+              onClick={onExport}
             >
               <Download size={16} />
               {progress === null

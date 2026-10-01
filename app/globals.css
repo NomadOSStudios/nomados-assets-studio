@@ -212,9 +212,12 @@ svg {
   color: #8f99a7;
   border-radius: 5px;
 }
-.icon-button:hover {
+.icon-button:hover:not(:disabled) {
   background: #32373f;
   color: #e8eaed;
+}
+[data-slot="dropdown-menu-item"] svg {
+  color: #9aa6b4;
 }
 .asset-list {
   display: flex;
@@ -247,10 +250,16 @@ svg {
 .asset-row:hover:not(.selected) {
   background: #292d33;
 }
-.asset-extension {
+.asset-kind {
   margin-left: auto;
-  color: #818c79;
-  font-size: 12px;
+  color: #6f7a87;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.asset-row.selected .asset-kind {
+  color: #8fa871;
 }
 .sidebar-section-title {
   border-top: 1px solid var(--border);
@@ -275,6 +284,33 @@ svg {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+.preset-slot {
+  position: relative;
+  min-width: 0;
+  display: flex;
+}
+.preset-slot .preset-card {
+  width: 100%;
+}
+.preset-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  background: #1d2025d9;
+  color: #c8cfd8;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.preset-slot:hover .preset-remove,
+.preset-remove:focus-visible {
+  opacity: 1;
+}
+.preset-remove:hover {
+  background: #4a2a30;
+  color: #ffb4bf;
 }
 .preset-card {
   text-align: left;
@@ -659,6 +695,22 @@ svg {
   color: #c8cfd8;
   font-size: 14px;
 }
+.heading-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #93a0ae;
+  cursor: pointer;
+  user-select: none;
+}
+.is-dimmed {
+  opacity: 0.45;
+  transition: opacity 150ms;
+}
+.text-input::placeholder {
+  color: #6b7684;
+}
 .border-position-choice {
   width: 116px;
 }
@@ -757,10 +809,15 @@ svg {
   background: #3a424d;
 }
 .numeric-slider [data-slot="slider-thumb"] {
-  width: 11px;
-  height: 11px;
+  width: 14px;
+  height: 14px;
   background: #d4dccb;
   border: 0;
+  cursor: grab;
+}
+.numeric-slider [data-slot="slider-thumb"]:active {
+  cursor: grabbing;
+  background: #e9f0dd;
 }
 .numeric-slider [data-slot="slider-range"] {
   background: #96b470;
@@ -918,6 +975,7 @@ svg {
     overflow: auto;
     margin-top: 10px;
   }
+  .preset-slot,
   .preset-card {
     flex: 1;
     min-width: 85px;
@@ -927,6 +985,9 @@ svg {
   }
   .preset-art {
     height: 34px;
+  }
+  .preset-remove {
+    opacity: 1;
   }
   .design-stage {
     min-height: 340px;
@@ -1221,7 +1282,7 @@ svg {
   .project-name {
     max-width: 220px;
   }
-  .asset-extension {
+  .asset-kind {
     display: none;
   }
   .editor-shell {

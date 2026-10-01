@@ -3,7 +3,7 @@ import { useId } from "react";
 import { Download } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Choice, Range } from "./studio-controls";
-import { padding, type Design } from "@/lib/studio";
+import { padding, type ButtonState, type Design } from "@/lib/studio";
 export type ExportSettings = {
   scope: "png" | "states" | "kit";
   scale: number;
@@ -11,6 +11,7 @@ export type ExportSettings = {
 };
 export function ExportOptions({
   design: d,
+  state,
   settings: s,
   onChange,
   busy,
@@ -20,6 +21,7 @@ export function ExportOptions({
   onSlice,
 }: {
   design: Design;
+  state: ButtonState;
   settings: ExportSettings;
   onChange: (v: Partial<ExportSettings>) => void;
   busy: boolean;
@@ -29,7 +31,9 @@ export function ExportOptions({
   onSlice: (v: number) => void;
 }) {
   const p = padding(d),
-    id = useId();
+    id = useId(),
+    stateLabel =
+      state === "normal" ? "Default" : state[0].toUpperCase() + state.slice(1);
   return (
     <div className="export-options">
       <label className="field-label">Export</label>
@@ -37,7 +41,7 @@ export function ExportOptions({
         label="Export scope"
         value={s.scope}
         options={[
-          { value: "png", label: "Selected state · PNG" },
+          { value: "png", label: `${stateLabel} state · PNG` },
           { value: "states", label: "All button states · ZIP" },
           { value: "kit", label: "Entire asset kit · ZIP" },
         ]}
@@ -58,7 +62,11 @@ export function ExportOptions({
           {(d.width + p * 2) * s.scale} ×{" "}
           {(d.height + p * 2 + d.depth) * s.scale}
         </strong>
-        <span>Pixels, including transparent effect padding</span>
+        <span>
+          Pixels, including transparent effect padding
+          {s.scope === "png" &&
+            ` · ${stateLabel} state, chosen under the canvas`}
+        </span>
       </div>
       <div className="toggle-row">
         <label htmlFor={id + "content"}>Include text & icons</label>

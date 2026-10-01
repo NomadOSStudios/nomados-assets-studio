@@ -24,27 +24,27 @@ npm run build
 - Editable dimensions, individual corner radii, gradients, borders, embossed/engraved/raised surfaces, shadows, and glows.
 - Numeric controls support sliders, exact typing, and wheel adjustment while hovering over the value. Scroll up to increase and down to decrease; hold Shift for ten times the step.
 - Border color, thickness, and Inside / Center / Outside placement. Outside borders receive extra PNG padding when needed; existing projects keep their inside borders.
-- Six starting styles, saved custom styles, and explicit updates to assets linked to a saved style.
+- Six starting styles, saved custom styles, and explicit updates to assets linked to a saved style. Hover a saved style to delete it; linked assets keep their look.
 - Default, hover, pressed, and disabled state previews.
 - Text, system fonts, built-in icons, uploaded icons, and image textures.
-- Undo/redo, asset creation/duplication/removal, and a draggable screen builder.
+- Undo/redo, asset creation/duplication/removal, and a draggable screen builder. ⌘D (Ctrl+D on Windows) duplicates the selected asset.
 - Custom screen dimensions (64–4096 px), common resolution presets, orientation swap, fit/zoom, and precise asset coordinates.
 - Solid, gradient, transparent, or uploaded image backgrounds, saved with the project.
 - Whole-screen PNG export at the exact chosen resolution, without editor guides.
 - Device-local autosave in IndexedDB and portable `.uim.json` files, including imported image data.
 - Transparent PNGs at 1×, 2×, and 4×. ZIP packs include button states, a manifest, and a Unity sprite importer.
-- Confetti, sparkles, and seamless floating backgrounds, with deterministic playback and PNG frame or sprite-sheet exports.
+- Confetti, sparkles, and seamless floating backgrounds, with deterministic playback and PNG frame or sprite-sheet exports. The header export button follows the active workspace: assets, screen, or animation.
 - Optional browser WebMCP tools to read the project and update existing assets.
 
 ## Saving
 
-Use the project menu beside the logo to save or open a project file. Browser saves belong to the current browser and site origin. They do not sync between devices or browser profiles. Download a project file for backups or transfers. If storage is unavailable, the editor keeps the current work in memory and displays a save error.
+Use the project menu beside the logo to rename the project, save or open a project file, or start a new project. Starting a new project can be undone. Browser saves belong to the current browser and site origin. They do not sync between devices or browser profiles. Download a project file for backups or transfers. If storage is unavailable, the editor keeps the current work in memory and displays a save error.
 
 ## Build a screen
 
 Open **Screen builder**, then use the **Screen** tab in the right inspector to name the screen, set its width and height, choose a resolution preset, or change the background. Background images support fill/crop, fit inside, and stretch.
 
-Click an asset to drag it or edit its **Asset** properties, including X/Y coordinates and **Center on screen**. Click empty space to return to screen settings. Arrow keys move a selected asset by 1 pixel; Shift+Arrow moves it by 10 pixels. Resizing preserves existing asset positions. **Fit** shows the whole screen; percentage zoom enables scrolling for larger screens.
+Click an asset to drag it or edit its **Asset** properties, including X/Y coordinates and **Center on screen**. Click empty space or press Escape to return to screen settings. Arrow keys move a selected asset by 1 pixel; Shift+Arrow moves it by 10 pixels. Delete or Backspace removes the selected asset, with Undo offered in the toast. Resizing preserves existing asset positions. **Fit** shows the whole screen; percentage zoom enables scrolling for larger screens.
 
 **Export screen** saves a flattened PNG at the chosen dimensions, with no handles or guides. Individual asset export remains available in **Designer**. Existing project files automatically receive the original 960 × 640 screen defaults.
 
