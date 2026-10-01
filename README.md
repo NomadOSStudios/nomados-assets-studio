@@ -57,6 +57,14 @@ Click an asset to drag it or edit its **Asset** properties, including X/Y coordi
 
 The importer preserves transparent effect padding and applies sprite borders. Export without text and icons for stretchable backgrounds. Baked textures, gradients, and lighting may change appearance when stretched; use the screen preview and check your actual target size in Unity.
 
+Pixels per unit is 100 times the export scale, so a 2× or 4× pack keeps the same size and border thickness on screen as 1×.
+
+### Screen prefab
+
+A kit export carries the Screen builder layout in the manifest: the screen's name and size, and every placed asset's name, kind, file, position and size at 1×, in draw order (panels first). In Unity, select `uim-manifest.json` and choose **Tools → UIM Studio → Build screen prefab**: a prefab named after the screen appears beside the manifest, one Image per asset at its exact position and size, sliced where borders exist, with a Button and Sprite Swap states where the asset had states. Re-export under the same file names and existing prefabs keep their sprites.
+
+Presets include **Mobile tall · 1080 × 2228** for a full-height phone board.
+
 Animation ZIPs contain timing metadata and import instructions. Import sheets as Multiple sprites and slice using the cell size in `animation.json`. Animation clips and game behaviors are configured in Unity; the app does not generate game logic or automatically connect UI controls.
 
 ## Validation completed
