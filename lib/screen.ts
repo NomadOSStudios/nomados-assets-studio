@@ -33,6 +33,12 @@ export const screenPresets = [
   },
   { value: "1280x720", label: "HD · 1280 × 720", width: 1280, height: 720 },
   {
+    value: "1080x2228",
+    label: "Mobile tall · 1080 × 2228",
+    width: 1080,
+    height: 2228,
+  },
+  {
     value: "1080x1920",
     label: "Mobile portrait · 1080 × 1920",
     width: 1080,

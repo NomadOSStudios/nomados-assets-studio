@@ -599,6 +599,7 @@ export default function Studio() {
             true,
             state,
             s.content,
+            s.scope === "kit" ? screen : undefined,
           ),
           `${slug(s.scope === "kit" ? project.name : d.name)}.zip`,
         );

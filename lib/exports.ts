@@ -11,26 +11,31 @@ import {
 import { createZip } from "./zip";
 import { renderEffect } from "./effects";
 import type { Effect } from "./project";
+import type { ScreenSettings } from "./screen";
 export async function exportAssets(
   assets: Design[],
   scale: number,
   allStates: boolean,
   selected: ButtonState,
   withText: boolean,
+  screen?: ScreenSettings,
 ) {
   const files: { name: string; data: Blob | string }[] = [],
-    entries: object[] = [];
+    entries: object[] = [],
+    placements: object[] = [];
   for (const [index, original] of assets.entries()) {
     const d = withText
       ? original
       : { ...original, text: "", icon: "", iconData: "" };
     await loadImages(d);
+    let firstFile = "";
     for (const s of allStates && d.kind === "button" ? states : [selected]) {
       const file = `${String(index + 1).padStart(2, "0")}-${slug(d.name)}-${s}.png`,
         c = renderDesign(d, s, scale, withText && d.includeText),
         p = padding(d),
         slice = Math.min(d.slice, d.width / 2 - 1, d.height / 2 - 1);
       files.push({ name: file, data: await canvasBlob(c) });
+      if (!firstFile) firstFile = file;
       entries.push({
         file,
         name: d.name,
@@ -49,11 +54,35 @@ export async function exportAssets(
         },
       });
     }
+    // Screen builder placement, in screen pixels at 1x, top-left origin:
+    // the Unity importer builds a frame prefab from these.
+    if (screen && original.x !== undefined && original.y !== undefined)
+      placements.push({
+        name: d.name,
+        file: firstFile,
+        x: original.x,
+        y: original.y,
+        width: d.width,
+        height: d.height,
+      });
   }
   files.push({
     name: "uim-manifest.json",
     data: JSON.stringify(
-      { version: 1, scale, pixelsPerUnit: 100, assets: entries },
+      {
+        version: 1,
+        scale,
+        pixelsPerUnit: 100,
+        assets: entries,
+        screen: screen
+          ? {
+              name: screen.name,
+              width: screen.width,
+              height: screen.height,
+              assets: placements,
+            }
+          : undefined,
+      },
       null,
       2,
     ),
@@ -66,7 +95,7 @@ export async function exportAssets(
   });
   files.push({
     name: "README.txt",
-    data: "UIM Studio asset pack\n\n1. Extract this folder under Assets in your Unity project. Keep Editor/UIMAssetImporter.cs inside an Editor folder.\n2. Select uim-manifest.json in Unity. Choose Tools > UIM Studio > Apply sprite settings.\n3. Add a UI Image, assign a sprite, and choose Image Type: Sliced for resizable panels.\n4. The transparent padding preserves shadows and glow. Sprite borders include that padding. Text and icons baked into the image will stretch when sliced; export backgrounds without labels/icons for resizable UI.\n5. Connect the state sprites to your Button Sprite Swap transition. Game logic and screen layouts stay in Unity.\n\nImported as Sprite (2D and UI), 100 pixels per unit, alpha transparency, no mipmaps, uncompressed. Review memory use and compression for your target platform.\n",
+    data: "UIM Studio asset pack\n\n1. Extract this folder under Assets in your Unity project. Keep Editor/UIMAssetImporter.cs inside an Editor folder.\n2. Select uim-manifest.json in Unity. Choose Tools > UIM Studio > Apply sprite settings.\n3. Add a UI Image, assign a sprite, and choose Image Type: Sliced for resizable panels.\n4. The transparent padding preserves shadows and glow. Sprite borders include that padding. Text and icons baked into the image will stretch when sliced; export backgrounds without labels/icons for resizable UI.\n5. Connect the state sprites to your Button Sprite Swap transition.\n6. If the kit was exported with assets placed in the Screen builder, choose Tools > UIM Studio > Build screen prefab: a prefab named after the screen, one Image per asset at its exact position and size, buttons with their state sprites wired. Game logic stays in Unity.\n\nImported as Sprite (2D and UI), 100 pixels per unit times the export scale, alpha transparency, no mipmaps, uncompressed. Review memory use and compression for your target platform.\n",
   });
   return createZip(files);
 }
