@@ -3,7 +3,12 @@ import { useId } from "react";
 import { Download } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Choice, Range } from "./studio-controls";
-import { padding, type ButtonState, type Design } from "@/lib/studio";
+import {
+  depthOf,
+  padding,
+  type ButtonState,
+  type Design,
+} from "@/lib/studio";
 export type ExportSettings = {
   scope: "png" | "states" | "kit";
   scale: number;
@@ -60,7 +65,7 @@ export function ExportOptions({
       <div className="export-dimensions">
         <strong>
           {(d.width + p * 2) * s.scale} ×{" "}
-          {(d.height + p * 2 + d.depth) * s.scale}
+          {(d.height + p * 2 + depthOf(d)) * s.scale}
         </strong>
         <span>
           Pixels, including transparent effect padding

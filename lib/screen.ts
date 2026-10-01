@@ -83,9 +83,15 @@ export function loadScreenImage(
   return pending;
 }
 
-const behind = (a: Design) => a.kind === "panel" || a.kind === "window";
+// Draw order: panels and windows underneath, text on top, the rest between.
+const layer = (a: Design) =>
+  a.kind === "panel" || a.kind === "window"
+    ? 0
+    : a.kind === "title" || a.kind === "paragraph"
+      ? 2
+      : 1;
 export function orderedScreenAssets(assets: Design[]) {
-  return [...assets].sort((a, b) => Number(!behind(a)) - Number(!behind(b)));
+  return [...assets].sort((a, b) => layer(a) - layer(b));
 }
 
 export type SnapGuides = { x: number[]; y: number[] };

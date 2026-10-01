@@ -1,6 +1,6 @@
 # UIM Studio
 
-A personal, browser-based game UI asset designer. Create buttons, panels, windows, slots, progress bars, badges, and animated effects, then export transparent assets for Unity.
+A personal, browser-based game UI asset designer. Create buttons, panels, windows, slots, progress bars, badges, titles, paragraphs, and animated effects, then export transparent assets for Unity.
 
 ## Run locally
 
@@ -48,7 +48,7 @@ Open **Screen builder**, then use the **Screen** tab in the right inspector to n
 
 Click an asset to drag it or edit its **Asset** properties, including X/Y coordinates, six **Align to screen** buttons, **Center on screen**, and **Stacking order**. Dragging snaps to the screen edges and centre and to other assets, with dashed guides; hold Shift to lock the drag to one axis and Option (Alt) to drag freely. Click empty space or press Escape to return to screen settings. Arrow keys move a selected asset by 1 pixel; Shift+Arrow moves it by 10 pixels. Delete or Backspace removes the selected asset, with Undo offered in the toast. Resizing preserves existing asset positions. **Fit** shows the whole screen; percentage zoom enables scrolling for larger screens.
 
-Panels and windows always draw behind other assets. **Export screen** saves a flattened PNG at the chosen dimensions, with no handles or guides. Individual asset export remains available in **Designer**. Existing project files automatically receive the original 960 × 640 screen defaults.
+Panels and windows always draw behind other assets, and titles and paragraphs draw on top. Titles and paragraphs are text-only assets with alignment, line height, word wrapping, outline, and shadow. **Export screen** saves a flattened PNG at the chosen dimensions, with no handles or guides. Individual asset export remains available in **Designer**. Existing project files automatically receive the original 960 × 640 screen defaults.
 
 ## Unity
 

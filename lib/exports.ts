@@ -3,6 +3,7 @@ import {
   renderDesign,
   loadImages,
   padding,
+  depthOf,
   slug,
   states,
   type Design,
@@ -48,7 +49,7 @@ export async function exportAssets(
         width: c.width,
         height: c.height,
         left: (p + slice) * scale,
-        bottom: (p + d.depth + slice) * scale,
+        bottom: (p + depthOf(d) + slice) * scale,
         right: (p + slice) * scale,
         top: (p + slice) * scale,
         body: {

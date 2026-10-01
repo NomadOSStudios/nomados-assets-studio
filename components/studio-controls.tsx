@@ -11,6 +11,7 @@ import {
 import {
   drawDesign,
   padding,
+  depthOf,
   loadImages,
   type Design,
   type ButtonState,
@@ -30,7 +31,7 @@ export function AssetCanvas({
       if (!c || !active) return;
       const p = padding(design);
       c.width = (design.width + p * 2) * 2;
-      c.height = (design.height + p * 2 + design.depth) * 2;
+      c.height = (design.height + p * 2 + depthOf(design)) * 2;
       const ctx = c.getContext("2d")!;
       ctx.scale(2, 2);
       drawDesign(ctx, design, state);

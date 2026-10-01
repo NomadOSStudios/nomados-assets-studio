@@ -4,7 +4,10 @@ export type AssetKind =
   | "slot"
   | "bar"
   | "badge"
-  | "window";
+  | "window"
+  | "title"
+  | "paragraph";
+export type TextAlign = "left" | "center" | "right";
 export type ButtonState = "normal" | "hover" | "pressed" | "disabled";
 export type Surface =
   | "raised"
@@ -76,6 +79,8 @@ export interface Design {
   textOutline: number;
   textOutlineColor: string;
   textShadow: boolean;
+  textAlign: TextAlign;
+  lineHeight: number;
   progress: number;
   accent?: string;
   themeId?: string;
@@ -362,6 +367,8 @@ export const baseDesign: Design = {
   textOutline: 0,
   textOutlineColor: "#000000",
   textShadow: false,
+  textAlign: "center",
+  lineHeight: 1.3,
   progress: 68,
   themeId: "Arcade",
 };
@@ -398,6 +405,10 @@ export const states: ButtonState[] = ["normal", "hover", "pressed", "disabled"];
 export function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
 }
+/** Titles and paragraphs are text only: no shape, shadow, or 3D depth. */
+export const isText = (d: Design) =>
+  d.kind === "title" || d.kind === "paragraph";
+export const depthOf = (d: Design) => (isText(d) ? 0 : d.depth);
 function borderOutset(d: Design) {
   return d.borderPosition === "outside"
     ? d.borderWidth
@@ -406,6 +417,7 @@ function borderOutset(d: Design) {
       : 0;
 }
 export function padding(d: Design) {
+  if (isText(d)) return Math.ceil(Math.max(8, d.textOutline + 4));
   return Math.ceil(
     Math.max(
       d.shadowBlur * 2 + Math.abs(d.shadowOffset) + d.depth + 4,
@@ -507,12 +519,83 @@ function iconPath(ctx: CanvasRenderingContext2D, icon: string, s: number) {
   }
   return "fill";
 }
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const lines: string[] = [];
+  for (const paragraph of text.split("\n")) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      lines.push("");
+      continue;
+    }
+    let line = words[0];
+    for (const word of words.slice(1)) {
+      const candidate = `${line} ${word}`;
+      if (ctx.measureText(candidate).width <= maxWidth) line = candidate;
+      else {
+        lines.push(line);
+        line = word;
+      }
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+// Text-only assets: wrapped lines inside the box, titles centred vertically,
+// paragraphs flowing from the top, with the same outline and shadow options.
+function drawTextBlock(
+  ctx: CanvasRenderingContext2D,
+  d: Design,
+  state: ButtonState,
+  withText: boolean,
+) {
+  const p = padding(d),
+    w = d.width,
+    h = d.height,
+    unit = Math.abs(ctx.getTransform().a) || 1,
+    text = withText ? d.text : "";
+  if (!text.trim()) return;
+  ctx.save();
+  ctx.globalAlpha = state === "disabled" ? 0.42 : 1;
+  ctx.font = `${d.bold ? "700" : "400"} ${d.fontSize}px ${d.font}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = d.textAlign;
+  const lines = wrapText(ctx, text, w),
+    lh = d.fontSize * d.lineHeight,
+    x = d.textAlign === "left" ? p : d.textAlign === "right" ? p + w : p + w / 2;
+  let y =
+    d.kind === "paragraph"
+      ? p + lh / 2
+      : p + h / 2 - (lines.length * lh) / 2 + lh / 2;
+  for (const line of lines) {
+    ctx.save();
+    if (d.textShadow) {
+      ctx.shadowColor = "rgba(0,0,0,.55)";
+      ctx.shadowBlur = 3 * unit;
+      ctx.shadowOffsetY = 2 * unit;
+    }
+    if (d.textOutline > 0) {
+      ctx.lineJoin = "round";
+      ctx.lineWidth = d.textOutline * 2;
+      ctx.strokeStyle = d.textOutlineColor;
+      ctx.strokeText(line, x, y);
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+    }
+    ctx.fillStyle = d.textColor;
+    ctx.fillText(line, x, y);
+    ctx.restore();
+    y += lh;
+  }
+  ctx.restore();
+}
 export function drawDesign(
   ctx: CanvasRenderingContext2D,
   d: Design,
   state: ButtonState = "normal",
   withText = d.includeText,
 ) {
+  if (isText(d)) return drawTextBlock(ctx, d, state, withText);
   const p = padding(d),
     w = d.width,
     h = d.height,
@@ -943,7 +1026,7 @@ export function renderDesign(
   const p = padding(d),
     canvas = document.createElement("canvas");
   canvas.width = Math.ceil((d.width + p * 2) * scale);
-  canvas.height = Math.ceil((d.height + p * 2 + d.depth) * scale);
+  canvas.height = Math.ceil((d.height + p * 2 + depthOf(d)) * scale);
   const ctx = canvas.getContext("2d")!;
   ctx.scale(scale, scale);
   drawDesign(ctx, d, state, withText);

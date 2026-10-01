@@ -30,6 +30,8 @@ import {
   X,
   Tag,
   AppWindow,
+  Type,
+  Pilcrow,
   AlignHorizontalJustifyStart,
   AlignHorizontalJustifyCenter,
   AlignHorizontalJustifyEnd,
@@ -76,6 +78,8 @@ import {
   presets,
   states,
   padding,
+  depthOf,
+  isText,
   loadImages,
   renderDesign,
   canvasBlob,
@@ -102,6 +106,8 @@ const kindIcons = {
   bar: RectangleHorizontal,
   badge: Tag,
   window: AppWindow,
+  title: Type,
+  paragraph: Pilcrow,
 } as const;
 const kindLabels: Record<AssetKind, string> = {
   button: "Button",
@@ -110,6 +116,8 @@ const kindLabels: Record<AssetKind, string> = {
   bar: "Bar",
   badge: "Badge",
   window: "Window",
+  title: "Title",
+  paragraph: "Paragraph",
 };
 const kindOrder: AssetKind[] = [
   "button",
@@ -118,6 +126,8 @@ const kindOrder: AssetKind[] = [
   "slot",
   "bar",
   "badge",
+  "title",
+  "paragraph",
 ];
 const kindDefaults: Record<AssetKind, Partial<Design>> = {
   button: { width: 288, height: 76, text: "PLAY GAME", icon: "play" },
@@ -132,6 +142,36 @@ const kindDefaults: Record<AssetKind, Partial<Design>> = {
     icon: "",
     radius: 14,
     fontSize: 18,
+  },
+  title: {
+    width: 420,
+    height: 64,
+    text: "LEVEL COMPLETE",
+    icon: "",
+    fontSize: 44,
+    bold: true,
+    textAlign: "center",
+    textColor: "#ffffff",
+    textOutline: 2,
+    textOutlineColor: "#1f2937",
+    textShadow: true,
+    includeText: true,
+    slice: 0,
+  },
+  paragraph: {
+    width: 380,
+    height: 120,
+    text: "Collect all three keys to open the vault. Watch for traps and keep an eye on the timer.",
+    icon: "",
+    fontSize: 18,
+    bold: false,
+    textAlign: "left",
+    lineHeight: 1.4,
+    textColor: "#e5e7eb",
+    textOutline: 0,
+    textShadow: false,
+    includeText: true,
+    slice: 0,
   },
 };
 const alignments = [
@@ -1191,8 +1231,8 @@ export default function Studio() {
                       style={{
                         left: `${(padding(d) / (d.width + padding(d) * 2)) * 100}%`,
                         right: `${(padding(d) / (d.width + padding(d) * 2)) * 100}%`,
-                        top: `${(padding(d) / (d.height + padding(d) * 2 + d.depth)) * 100}%`,
-                        bottom: `${((padding(d) + d.depth) / (d.height + padding(d) * 2 + d.depth)) * 100}%`,
+                        top: `${(padding(d) / (d.height + padding(d) * 2 + depthOf(d))) * 100}%`,
+                        bottom: `${((padding(d) + depthOf(d)) / (d.height + padding(d) * 2 + depthOf(d))) * 100}%`,
                       }}
                     >
                       <i />
@@ -1232,7 +1272,7 @@ export default function Studio() {
                   </span>
                 </div>
               </div>
-              {mode !== "scene" && (
+              {mode !== "scene" && !isText(d) && (
                 <div className="states-section">
                   <div className="states-heading">
                     <div>
@@ -1285,7 +1325,7 @@ export default function Studio() {
                 <span>
                   {mode === "scene"
                     ? `${screen.width} × ${screen.height} · PNG`
-                    : `Exports ${d.width + padding(d) * 2} × ${d.height + padding(d) * 2 + d.depth} px at 1× · transparent PNG`}
+                    : `Exports ${d.width + padding(d) * 2} × ${d.height + padding(d) * 2 + depthOf(d)} px at 1× · transparent PNG`}
                 </span>
               </footer>
             </section>
@@ -1387,7 +1427,8 @@ export default function Studio() {
                           </button>
                         </div>
                         <p className="help-text">
-                          Panels and windows always sit behind other assets.
+                          Panels and windows sit behind other assets; titles
+                          and paragraphs sit on top.
                         </p>
                       </section>
                     )}
