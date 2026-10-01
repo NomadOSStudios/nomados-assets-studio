@@ -12,6 +12,35 @@ export interface ScreenSettings {
   imageFit: "cover" | "contain" | "stretch";
 }
 
+export type Placement = { x: number; y: number };
+/** A screen in the builder: settings plus where each asset sits on it. */
+export interface Screen extends ScreenSettings {
+  id: string;
+  placements: Record<string, Placement>;
+}
+export interface ViewSettings {
+  grid: number;
+  showGrid: boolean;
+  snapGrid: boolean;
+  rulers: boolean;
+}
+export const defaultView: ViewSettings = {
+  grid: 16,
+  showGrid: false,
+  snapGrid: false,
+  rulers: true,
+};
+/** The visible assets placed on a screen, with their positions applied. */
+export function screenAssets(assets: Design[], screen: Screen): Design[] {
+  return assets
+    .filter((a) => !a.hidden && screen.placements[a.id])
+    .map((a) => ({ ...a, ...screen.placements[a.id] }));
+}
+export function newScreenId(existing: Screen[]) {
+  let n = existing.length + 1;
+  while (existing.some((s) => s.id === `screen-${n}`)) n++;
+  return `screen-${n}`;
+}
 export const defaultScreen: ScreenSettings = {
   name: "Main screen",
   width: 960,
@@ -95,6 +124,33 @@ export function orderedScreenAssets(assets: Design[]) {
 }
 
 export type SnapGuides = { x: number[]; y: number[] };
+/** Candidate snap lines: screen edges and centre, other assets' edges and centres. */
+export function snapLines(
+  screen: ScreenSettings,
+  assets: Design[],
+  exclude: Set<string>,
+): SnapGuides {
+  const lines: SnapGuides = {
+    x: [0, screen.width / 2, screen.width],
+    y: [0, screen.height / 2, screen.height],
+  };
+  for (const o of assets) {
+    if (exclude.has(o.id) || o.x === undefined || o.y === undefined) continue;
+    lines.x.push(o.x, o.x + o.width / 2, o.x + o.width);
+    lines.y.push(o.y, o.y + o.height / 2, o.y + o.height);
+  }
+  return lines;
+}
+/** Snaps one edge value to the nearest candidate line within the threshold. */
+export function snapEdge(value: number, candidates: number[], threshold: number) {
+  let best: { distance: number; line: number } | undefined;
+  for (const line of candidates) {
+    const distance = Math.abs(value - line);
+    if (distance <= threshold && (!best || distance < best.distance))
+      best = { distance, line };
+  }
+  return best?.line;
+}
 /**
  * Pulls a dragged asset onto the screen edges and centre, and onto the edges
  * and centres of the other assets, when an edge or its centre is within
@@ -151,7 +207,7 @@ export function drawScreen(
   screen: ScreenSettings,
   assets: Design[],
   backgroundImage?: HTMLImageElement,
-  selected?: string,
+  selected?: string | string[],
 ) {
   const { width, height } = screen;
   ctx.clearRect(0, 0, width, height);
@@ -203,18 +259,17 @@ export function drawScreen(
     drawDesign(ctx, asset);
     ctx.restore();
   }
-  const selection = assets.find((a) => a.id === selected);
-  if (selection) {
+  const ids = new Set(
+    typeof selected === "string" ? [selected] : (selected ?? []),
+  );
+  if (ids.size) {
     const scale = Math.abs(ctx.getTransform().a) || 1;
     ctx.strokeStyle = "#b5eb68";
     ctx.lineWidth = 1.5 / scale;
     ctx.setLineDash([5 / scale, 4 / scale]);
-    ctx.strokeRect(
-      selection.x ?? 0,
-      selection.y ?? 0,
-      selection.width,
-      selection.height,
-    );
+    for (const a of assets)
+      if (ids.has(a.id))
+        ctx.strokeRect(a.x ?? 0, a.y ?? 0, a.width, a.height);
   }
   ctx.restore();
 }

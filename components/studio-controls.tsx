@@ -281,6 +281,7 @@ export function NumberField({
   min = 0,
   max = 1024,
   step = 1,
+  suffix = "px",
 }: {
   label: string;
   displayLabel?: string;
@@ -289,6 +290,7 @@ export function NumberField({
   min?: number;
   max?: number;
   step?: number;
+  suffix?: string;
 }) {
   return (
     <div className="number-control">
@@ -305,7 +307,7 @@ export function NumberField({
           max={max}
           step={step}
         />
-        <small>px</small>
+        {suffix && <small>{suffix}</small>}
       </label>
       <Slider
         className="numeric-slider"

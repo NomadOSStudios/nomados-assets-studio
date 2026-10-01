@@ -112,7 +112,15 @@ export default function BorderVerification() {
         <output aria-label="Applied border position">{design.borderPosition}</output>
       </div>
       <aside style={{ width: 320 }}>
-        <DesignInspector design={design} patch={(v) => setDesign((d) => ({ ...d, ...v }))} onImage={() => {}} />
+        <DesignInspector
+          design={design}
+          patch={(v) => setDesign((d) => ({ ...d, ...v }))}
+          onImage={() => {}}
+          state="normal"
+          fonts={[]}
+          onFontUpload={() => {}}
+          onFontRemove={() => {}}
+        />
       </aside>
     </main>
   );

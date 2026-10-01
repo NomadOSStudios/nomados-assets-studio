@@ -4,6 +4,8 @@ import {
   loadImages,
   padding,
   depthOf,
+  isText,
+  isButtonLike,
   slug,
   states,
   type Design,
@@ -13,29 +15,26 @@ import { createZip } from "./zip";
 import { renderEffect } from "./effects";
 import type { Effect } from "./project";
 import { orderedScreenAssets, type ScreenSettings } from "./screen";
+/** A screen to export: its settings and the visible assets placed on it. */
+export type ExportScreen = { settings: ScreenSettings; assets: Design[] };
 export async function exportAssets(
   assets: Design[],
   scale: number,
   allStates: boolean,
   selected: ButtonState,
   withText: boolean,
-  screen?: ScreenSettings,
+  screens: ExportScreen[] = [],
 ) {
   const files: { name: string; data: Blob | string }[] = [],
     entries: object[] = [],
-    placements: { kind: string; order: number; placement: object }[] = [];
-  // Draw order of the screen builder: panels first, then the rest. The
-  // Unity importer stacks children in manifest order, bottom first.
-  const drawOrder = new Map(
-    orderedScreenAssets(assets).map((a, i) => [a.id, i] as const),
-  );
+    firstFiles = new Map<string, string>();
   for (const [index, original] of assets.entries()) {
     const d = withText
       ? original
       : { ...original, text: "", icon: "", iconData: "" };
     await loadImages(d);
     let firstFile = "";
-    for (const s of allStates && d.kind === "button" ? states : [selected]) {
+    for (const s of allStates && isButtonLike(d) ? states : [selected]) {
       const file = `${String(index + 1).padStart(2, "0")}-${slug(d.name)}-${s}.png`,
         c = renderDesign(d, s, scale, withText && d.includeText),
         p = padding(d),
@@ -60,23 +59,39 @@ export async function exportAssets(
         },
       });
     }
-    // Screen builder placement, in screen pixels at 1x, top-left origin:
-    // the Unity importer builds a frame prefab from these.
-    if (screen && original.x !== undefined && original.y !== undefined)
-      placements.push({
-        kind: d.kind,
-        order: drawOrder.get(d.id) ?? index,
-        placement: {
-          name: d.name,
-          kind: d.kind,
-          file: firstFile,
-          x: original.x,
-          y: original.y,
-          width: d.width,
-          height: d.height,
-        },
-      });
+    firstFiles.set(d.id, firstFile);
   }
+  // Screen builder placements, in screen pixels at 1x, top-left origin, in
+  // draw order (the Unity importer stacks children bottom first). Titles and
+  // paragraphs also carry their text so Unity can build real text objects.
+  const manifestScreens = screens.map(({ settings, assets: placed }) => ({
+    name: settings.name,
+    width: settings.width,
+    height: settings.height,
+    assets: orderedScreenAssets(placed)
+      .filter((a) => firstFiles.has(a.id))
+      .map((a) => ({
+        name: a.name,
+        kind: a.kind,
+        file: firstFiles.get(a.id),
+        x: a.x ?? 0,
+        y: a.y ?? 0,
+        width: a.width,
+        height: a.height,
+        text: isText(a)
+          ? {
+              kind: a.kind,
+              content: withText ? a.text : "",
+              fontSize: a.fontSize,
+              color: a.textColor,
+              align: a.textAlign,
+              bold: a.bold,
+              lineHeight: a.lineHeight,
+              font: a.font,
+            }
+          : undefined,
+      })),
+  }));
   files.push({
     name: "uim-manifest.json",
     data: JSON.stringify(
@@ -85,16 +100,8 @@ export async function exportAssets(
         scale,
         pixelsPerUnit: 100,
         assets: entries,
-        screen: screen
-          ? {
-              name: screen.name,
-              width: screen.width,
-              height: screen.height,
-              assets: placements
-                .sort((a, b) => a.order - b.order)
-                .map((p) => p.placement),
-            }
-          : undefined,
+        screen: manifestScreens[0],
+        screens: manifestScreens.length ? manifestScreens : undefined,
       },
       null,
       2,
@@ -108,7 +115,7 @@ export async function exportAssets(
   });
   files.push({
     name: "README.txt",
-    data: "UIM Studio asset pack\n\n1. Extract this folder under Assets in your Unity project. Keep Editor/UIMAssetImporter.cs inside an Editor folder.\n2. Select uim-manifest.json in Unity. Choose Tools > UIM Studio > Apply sprite settings.\n3. Add a UI Image, assign a sprite, and choose Image Type: Sliced for resizable panels.\n4. The transparent padding preserves shadows and glow. Sprite borders include that padding. Text and icons baked into the image will stretch when sliced; export backgrounds without labels/icons for resizable UI.\n5. Connect the state sprites to your Button Sprite Swap transition.\n6. If the kit was exported with assets placed in the Screen builder, choose Tools > UIM Studio > Build screen prefab: a prefab named after the screen, one Image per asset at its exact position and size, buttons with their state sprites wired. Game logic stays in Unity.\n\nImported as Sprite (2D and UI), 100 pixels per unit times the export scale, alpha transparency, no mipmaps, uncompressed. Review memory use and compression for your target platform.\n",
+    data: "UIM Studio asset pack\n\n1. Extract this folder under Assets in your Unity project. Keep Editor/UIMAssetImporter.cs inside an Editor folder.\n2. Select uim-manifest.json in Unity. Choose Tools > UIM Studio > Apply sprite settings.\n3. Add a UI Image, assign a sprite, and choose Image Type: Sliced for resizable panels.\n4. The transparent padding preserves shadows and glow. Sprite borders include that padding. Text and icons baked into the image will stretch when sliced; export backgrounds without labels/icons for resizable UI.\n5. Connect the state sprites to your Button Sprite Swap transition.\n6. If the kit was exported with assets placed in the Screen builder, choose Tools > UIM Studio > Build screen prefabs: one prefab per screen, one Image per asset at its exact position and size, buttons with their state sprites wired, and titles and paragraphs as editable text objects (TextMeshPro when installed, otherwise UI Text). Game logic stays in Unity.\n\nImported as Sprite (2D and UI), 100 pixels per unit times the export scale, alpha transparency, no mipmaps, uncompressed. Review memory use and compression for your target platform.\n",
   });
   return createZip(files);
 }

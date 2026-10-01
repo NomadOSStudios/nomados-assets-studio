@@ -1,13 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
-import { defaultScreen, renderScreen, fitScreenAsset } from "@/lib/screen";
+import {
+  defaultScreen,
+  defaultView,
+  renderScreen,
+  fitScreenAsset,
+  type Screen,
+} from "@/lib/screen";
 import { initialProject, parseProject } from "@/lib/project";
 import { baseDesign, canvasBlob } from "@/lib/studio";
 import { ScreenInspector } from "@/components/screen-inspector";
 import { ScenePreview } from "@/components/scene-preview";
 
 export default function ScreenVerification() {
-  const [screen, setScreen] = useState(defaultScreen);
+  const [screen, setScreen] = useState<Screen>({
+    ...defaultScreen,
+    id: "screen-1",
+    placements: {},
+  });
   const [report, setReport] = useState<string[]>([]);
   useEffect(() => {
     let active = true;
@@ -21,20 +31,24 @@ export default function ScreenVerification() {
       Array.from(c.getContext("2d")!.getImageData(x, y, 1, 1).data).join(",");
     async function verify() {
       try {
-        const { screen: _screen, ...legacy } = initialProject;
+        // A version-one file: no screens list, positions on the assets.
+        const { screens: _screens, activeScreen: _active, ...legacy } =
+          initialProject;
+        void _screens;
+        void _active;
         const migrated = parseProject(legacy);
         check(
           "Old projects retain their original 960 × 640 canvas",
-          migrated.screen.width === 960 &&
-            migrated.screen.height === 640 &&
-            migrated.screen.color === "#10151d",
+          migrated.screens[0].width === 960 &&
+            migrated.screens[0].height === 640 &&
+            migrated.screens[0].color === "#10151d",
         );
         check(
           "Old projects preserve existing asset positions",
           migrated.assets[0].x === initialProject.assets[0].x,
         );
         const expanded = parseProject({
-          ...initialProject,
+          ...legacy,
           screen: {
             ...defaultScreen,
             width: 1920,
@@ -46,14 +60,14 @@ export default function ScreenVerification() {
         const restored = parseProject(JSON.parse(JSON.stringify(expanded)));
         check(
           "Screen settings and positions beyond the old canvas survive save/open",
-          restored.screen.width === 1920 &&
-            restored.screen.background === "gradient" &&
+          restored.screens[0].width === 1920 &&
+            restored.screens[0].background === "gradient" &&
             restored.assets[0].x === 1500,
         );
         let rejected = false;
         try {
           parseProject({
-            ...initialProject,
+            ...legacy,
             screen: { ...defaultScreen, width: 4097 },
           });
         } catch {
@@ -184,17 +198,29 @@ export default function ScreenVerification() {
           <ScenePreview
             screen={screen}
             assets={initialProject.assets}
+            selection={[]}
             zoom="fit"
+            view={defaultView}
             onSelect={() => {}}
             onMove={() => {}}
+            onResize={() => {}}
+            onDuplicate={() => null}
           />
         </div>
         <ScreenInspector
           screen={screen}
+          screens={[screen]}
+          onSelectScreen={() => {}}
+          onAddScreen={() => {}}
+          onDuplicateScreen={() => {}}
+          onDeleteScreen={() => {}}
           onChange={(v) => setScreen((s) => ({ ...s, ...v }))}
           onImage={() => {}}
           onExport={() => {}}
+          onExportAll={() => {}}
           busy={false}
+          view={defaultView}
+          onView={() => {}}
         />
       </div>
     </main>

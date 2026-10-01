@@ -6,8 +6,36 @@ export type AssetKind =
   | "badge"
   | "window"
   | "title"
-  | "paragraph";
+  | "paragraph"
+  | "toggle"
+  | "checkbox"
+  | "slider"
+  | "tabs"
+  | "bubble"
+  | "frame"
+  | "iconbutton"
+  | "counter"
+  | "healthbar";
 export type TextAlign = "left" | "center" | "right";
+export type Tail = "bottom" | "top" | "left" | "right";
+export type GradientType = "linear" | "radial";
+export type GradientStop = { at: number; color: string };
+export type StateStyle = {
+  fill?: string;
+  fillEnd?: string;
+  border?: string;
+  textColor?: string;
+};
+export type StateStyles = Partial<
+  Record<"hover" | "pressed" | "disabled", StateStyle>
+>;
+export const systemFonts = [
+  "Arial",
+  "Verdana",
+  "Georgia",
+  "Trebuchet MS",
+  "Courier New",
+];
 export type ButtonState = "normal" | "hover" | "pressed" | "disabled";
 export type Surface =
   | "raised"
@@ -83,6 +111,24 @@ export interface Design {
   lineHeight: number;
   progress: number;
   accent?: string;
+  gradientType: GradientType;
+  stops: GradientStop[];
+  shadowColor: string;
+  glowColor?: string;
+  textureOpacity: number;
+  textureScale: number;
+  textureRepeat: boolean;
+  grain: number;
+  letterSpacing: number;
+  uppercase: boolean;
+  pixelSize: number;
+  on: boolean;
+  segments: number;
+  activeTab: number;
+  tail: Tail;
+  stateStyles?: StateStyles;
+  locked: boolean;
+  hidden: boolean;
   themeId?: string;
   x?: number;
   y?: number;
@@ -110,6 +156,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 60,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: false,
     },
@@ -131,6 +183,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 55,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: false,
     },
@@ -152,6 +210,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 70,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: true,
     },
@@ -173,6 +237,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 60,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: false,
     },
@@ -194,6 +264,12 @@ export const presets: Preset[] = [
       shape: "cut",
       highlight: 0,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: false,
     },
@@ -215,6 +291,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 0,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: false,
     },
@@ -236,6 +318,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 75,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: true,
     },
@@ -257,6 +345,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 60,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: false,
     },
@@ -278,6 +372,12 @@ export const presets: Preset[] = [
       shape: "cut",
       highlight: 70,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: true,
     },
@@ -299,6 +399,12 @@ export const presets: Preset[] = [
       shape: "round",
       highlight: 65,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 1.5,
       textOutlineColor: "#831843",
       textShadow: false,
@@ -324,6 +430,12 @@ export const presets: Preset[] = [
       shape: "cut",
       highlight: 0,
       lightAngle: 120,
+      gradientType: "linear",
+      stops: [],
+      shadowColor: "#000000",
+      grain: 0,
+      pixelSize: 0,
+      stateStyles: undefined,
       textOutline: 0,
       textShadow: false,
     },
@@ -370,6 +482,22 @@ export const baseDesign: Design = {
   textAlign: "center",
   lineHeight: 1.3,
   progress: 68,
+  gradientType: "linear",
+  stops: [],
+  shadowColor: "#000000",
+  textureOpacity: 45,
+  textureScale: 100,
+  textureRepeat: false,
+  grain: 0,
+  letterSpacing: 0,
+  uppercase: false,
+  pixelSize: 0,
+  on: true,
+  segments: 10,
+  activeTab: 0,
+  tail: "bottom",
+  locked: false,
+  hidden: false,
   themeId: "Arcade",
 };
 export const defaultAssets: Design[] = [
@@ -409,6 +537,12 @@ export function clamp(v: number, min: number, max: number) {
 export const isText = (d: Design) =>
   d.kind === "title" || d.kind === "paragraph";
 export const depthOf = (d: Design) => (isText(d) ? 0 : d.depth);
+/** Kinds that export hover, pressed, and disabled states. */
+export const isButtonLike = (d: Design) =>
+  d.kind === "button" || d.kind === "iconbutton";
+/** Speech-bubble tail length, which pokes into the transparent padding. */
+export const tailLength = (d: Design) =>
+  clamp(Math.round(Math.min(d.width, d.height) * 0.3), 10, 28);
 function borderOutset(d: Design) {
   return d.borderPosition === "outside"
     ? d.borderWidth
@@ -418,11 +552,19 @@ function borderOutset(d: Design) {
 }
 export function padding(d: Design) {
   if (isText(d)) return Math.ceil(Math.max(8, d.textOutline + 4));
+  // Slider knobs and bubble tails reach past the body into the padding.
+  const extra =
+    d.kind === "slider"
+      ? d.height * 0.4 + 6
+      : d.kind === "bubble"
+        ? tailLength(d) + 4
+        : 0;
   return Math.ceil(
     Math.max(
       d.shadowBlur * 2 + Math.abs(d.shadowOffset) + d.depth + 4,
       d.glow * 2 + 4,
       borderOutset(d) + 2,
+      extra,
       8,
     ),
   );
@@ -540,8 +682,45 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   }
   return lines;
 }
+function applyFont(ctx: CanvasRenderingContext2D, d: Design) {
+  ctx.font = `${d.bold ? "700" : "400"} ${d.fontSize}px "${d.font}", sans-serif`;
+  if ("letterSpacing" in ctx)
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing =
+      `${d.letterSpacing ?? 0}px`;
+}
+const shown = (d: Design, text: string) =>
+  d.uppercase ? text.toUpperCase() : text;
+// One run of text with the asset's outline and shadow treatment.
+function paintText(
+  ctx: CanvasRenderingContext2D,
+  d: Design,
+  text: string,
+  x: number,
+  y: number,
+  unit: number,
+  maxWidth?: number,
+) {
+  ctx.save();
+  if (d.textShadow) {
+    ctx.shadowColor = "rgba(0,0,0,.55)";
+    ctx.shadowBlur = 3 * unit;
+    ctx.shadowOffsetY = 2 * unit;
+  }
+  if (d.textOutline > 0) {
+    ctx.lineJoin = "round";
+    ctx.lineWidth = d.textOutline * 2;
+    ctx.strokeStyle = d.textOutlineColor;
+    ctx.strokeText(text, x, y, maxWidth);
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+  }
+  ctx.fillStyle = d.textColor;
+  ctx.fillText(text, x, y, maxWidth);
+  ctx.restore();
+}
 // Text-only assets: wrapped lines inside the box, titles centred vertically,
-// paragraphs flowing from the top, with the same outline and shadow options.
+// paragraphs flowing from the top.
 function drawTextBlock(
   ctx: CanvasRenderingContext2D,
   d: Design,
@@ -552,11 +731,11 @@ function drawTextBlock(
     w = d.width,
     h = d.height,
     unit = Math.abs(ctx.getTransform().a) || 1,
-    text = withText ? d.text : "";
+    text = withText ? shown(d, d.text) : "";
   if (!text.trim()) return;
   ctx.save();
   ctx.globalAlpha = state === "disabled" ? 0.42 : 1;
-  ctx.font = `${d.bold ? "700" : "400"} ${d.fontSize}px ${d.font}`;
+  applyFont(ctx, d);
   ctx.textBaseline = "middle";
   ctx.textAlign = d.textAlign;
   const lines = wrapText(ctx, text, w),
@@ -567,27 +746,33 @@ function drawTextBlock(
       ? p + lh / 2
       : p + h / 2 - (lines.length * lh) / 2 + lh / 2;
   for (const line of lines) {
-    ctx.save();
-    if (d.textShadow) {
-      ctx.shadowColor = "rgba(0,0,0,.55)";
-      ctx.shadowBlur = 3 * unit;
-      ctx.shadowOffsetY = 2 * unit;
-    }
-    if (d.textOutline > 0) {
-      ctx.lineJoin = "round";
-      ctx.lineWidth = d.textOutline * 2;
-      ctx.strokeStyle = d.textOutlineColor;
-      ctx.strokeText(line, x, y);
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-    }
-    ctx.fillStyle = d.textColor;
-    ctx.fillText(line, x, y);
-    ctx.restore();
+    paintText(ctx, d, line, x, y, unit);
     y += lh;
   }
   ctx.restore();
+}
+let noise: HTMLCanvasElement | undefined;
+// Deterministic grain tile so previews and exports match.
+function noiseTile() {
+  if (noise) return noise;
+  noise = document.createElement("canvas");
+  noise.width = noise.height = 96;
+  const ctx = noise.getContext("2d")!,
+    img = ctx.createImageData(96, 96);
+  let seed = 7;
+  for (let i = 0; i < img.data.length; i += 4) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const v = seed / 0x7fffffff > 0.5 ? 255 : 0;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return noise;
+}
+function withState(d: Design, state: ButtonState): Design {
+  if (state === "normal" || !d.stateStyles) return d;
+  const o = d.stateStyles[state];
+  return o ? { ...d, ...o } : d;
 }
 export function drawDesign(
   ctx: CanvasRenderingContext2D,
@@ -595,6 +780,33 @@ export function drawDesign(
   state: ButtonState = "normal",
   withText = d.includeText,
 ) {
+  const px = Math.round(d.pixelSize ?? 0);
+  if (px >= 2) {
+    // Pixel art: render small, then scale up with nearest-neighbour sampling.
+    const p = padding(d),
+      fullW = d.width + p * 2,
+      fullH = d.height + p * 2 + depthOf(d),
+      small = document.createElement("canvas");
+    small.width = Math.max(1, Math.ceil(fullW / px));
+    small.height = Math.max(1, Math.ceil(fullH / px));
+    const sctx = small.getContext("2d")!;
+    sctx.scale(1 / px, 1 / px);
+    drawDesignRaw(sctx, { ...d, pixelSize: 0 }, state, withText);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(small, 0, 0, small.width * px, small.height * px);
+    ctx.restore();
+    return;
+  }
+  drawDesignRaw(ctx, d, state, withText);
+}
+function drawDesignRaw(
+  ctx: CanvasRenderingContext2D,
+  design: Design,
+  state: ButtonState,
+  withText: boolean,
+) {
+  const d = withState(design, state);
   if (isText(d)) return drawTextBlock(ctx, d, state, withText);
   const p = padding(d),
     w = d.width,
@@ -607,7 +819,8 @@ export function drawDesign(
     // Unit vector toward the light in canvas space (y down). 90° is straight up.
     phi = (((d.lightAngle ?? 120) % 360) * Math.PI) / 180,
     lx = Math.cos(phi),
-    ly = -Math.sin(phi);
+    ly = -Math.sin(phi),
+    hollow = d.kind === "frame";
   const corners = d.independentCorners
     ? d.corners
     : [d.radius, d.radius, d.radius, d.radius];
@@ -642,6 +855,44 @@ export function drawDesign(
       );
   };
   const body = () => path(offset);
+  // Speech-bubble tail: a triangle on one edge, drawn before the body so the
+  // body covers the join.
+  const tail = (append = false) => {
+    if (d.kind !== "bubble") return;
+    if (!append) ctx.beginPath();
+    const L = tailLength(d),
+      half = Math.min(14, w / 4, h / 4),
+      y0 = p + offset;
+    if (d.tail === "bottom") {
+      const x = p + w * 0.3;
+      ctx.moveTo(x - half, y0 + h - 1);
+      ctx.lineTo(x, y0 + h + L);
+      ctx.lineTo(x + half, y0 + h - 1);
+    } else if (d.tail === "top") {
+      const x = p + w * 0.3;
+      ctx.moveTo(x - half, y0 + 1);
+      ctx.lineTo(x, y0 - L);
+      ctx.lineTo(x + half, y0 + 1);
+    } else if (d.tail === "left") {
+      const y = y0 + h * 0.4;
+      ctx.moveTo(p + 1, y - half);
+      ctx.lineTo(p - L, y);
+      ctx.lineTo(p + 1, y + half);
+    } else {
+      const y = y0 + h * 0.4;
+      ctx.moveTo(p + w - 1, y - half);
+      ctx.lineTo(p + w + L, y);
+      ctx.lineTo(p + w - 1, y + half);
+    }
+    ctx.closePath();
+  };
+  // Border ring, used for the frame kind's shadow and for the border itself.
+  const ring = () => {
+    const outset = borderOutset(d),
+      inset = d.borderWidth - outset;
+    path(offset, -outset);
+    if (w > inset * 2 && h > inset * 2) path(offset, inset, true);
+  };
   // Inner shadow: clip to the body and cast a shadow from everything outside it.
   const innerShade = (color: string, blur: number, dx: number, dy: number) => {
     ctx.save();
@@ -684,8 +935,6 @@ export function drawDesign(
       pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
       ctx.closePath();
     };
-    // The part of the ring that belongs to one corner: a square around an
-    // arc, or the band directly in front of a chamfer.
     const cornerRegion = (corner: number) => {
       const r = radii[corner];
       if (r <= 0) return;
@@ -729,7 +978,6 @@ export function drawDesign(
     path(offset, 0);
     path(offset, b, true);
     ctx.clip("evenodd");
-    // Straight edges: everything outside the corner regions.
     ctx.save();
     ctx.beginPath();
     ctx.rect(x0 - 1, y0 - 1, w + 2, h + 2);
@@ -746,8 +994,6 @@ export function drawDesign(
     wedge([[x1, y1], [x0, y1], [x0 + m, y1 - m], [x1 - m, y1 - m]], lit(0, 1));
     wedge([[x0, y1], [x0, y0], [x0 + m, y0 + m], [x0 + m, y1 - m]], lit(-1, 0));
     ctx.restore();
-    // Corners. Conic angles run clockwise from +x, so the outward normal at
-    // angle a is (cos a, sin a); each corner covers a quarter turn.
     const starts = [Math.PI, Math.PI * 1.5, 0, Math.PI / 2];
     const centers = [
       [x0 + radii[0], y0 + radii[0]],
@@ -768,8 +1014,7 @@ export function drawDesign(
       else {
         const [cx, cy] = centers[corner];
         const g = ctx.createConicGradient(start, cx, cy);
-        for (let i = 0; i <= 4; i++)
-          g.addColorStop(i / 16, shade(at(i / 16)));
+        for (let i = 0; i <= 4; i++) g.addColorStop(i / 16, shade(at(i / 16)));
         g.addColorStop(1, shade(at(0)));
         ctx.fillStyle = g;
       }
@@ -800,60 +1045,121 @@ export function drawDesign(
     ctx.fill();
     ctx.restore();
   };
+  const buildFill = (): string | CanvasGradient => {
+    if (!d.gradient) return d.fill;
+    const cx = p + w / 2,
+      cy = p + offset + h / 2;
+    let g: CanvasGradient;
+    if (d.gradientType === "radial")
+      g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(w, h) / 2);
+    else {
+      const a = (d.angle * Math.PI) / 180,
+        reach = (Math.abs(w * Math.cos(a)) + Math.abs(h * Math.sin(a))) / 2;
+      g = ctx.createLinearGradient(
+        cx - Math.cos(a) * reach,
+        cy - Math.sin(a) * reach,
+        cx + Math.cos(a) * reach,
+        cy + Math.sin(a) * reach,
+      );
+    }
+    g.addColorStop(0, d.fill);
+    for (const s of [...(d.stops ?? [])].sort((a, b) => a.at - b.at))
+      g.addColorStop(clamp(s.at, 0, 100) / 100, s.color);
+    g.addColorStop(1, d.fillEnd);
+    return g;
+  };
   ctx.save();
   ctx.globalAlpha = state === "disabled" ? 0.42 : 1;
   const raised = d.surface === "raised";
   if (d.shadow > 0) {
     ctx.save();
-    ctx.shadowColor = `rgba(0,0,0,${d.shadow / 100})`;
+    const sc = d.shadowColor ?? "#000000",
+      alpha = Math.round((d.shadow / 100) * 255)
+        .toString(16)
+        .padStart(2, "0");
+    ctx.shadowColor = `${sc}${alpha}`;
     ctx.shadowBlur = d.shadowBlur * unit;
     ctx.shadowOffsetY = d.shadowOffset * unit;
-    path(offset);
     ctx.fillStyle = d.fill;
-    ctx.fill();
+    if (hollow) {
+      ring();
+      ctx.fill("evenodd");
+    } else {
+      path(offset);
+      tail(true);
+      ctx.fill();
+    }
     ctx.restore();
   }
   if (d.glow > 0) {
     ctx.save();
-    ctx.shadowColor = d.border;
+    ctx.shadowColor = d.glowColor ?? d.border;
     ctx.shadowBlur = d.glow * unit;
-    path(offset);
-    ctx.fillStyle = d.fill;
-    ctx.fill();
-    ctx.fill();
+    ctx.fillStyle = hollow ? d.border : d.fill;
+    if (hollow) ring();
+    else {
+      path(offset);
+      tail(true);
+    }
+    ctx.fill(hollow ? "evenodd" : "nonzero");
+    ctx.fill(hollow ? "evenodd" : "nonzero");
     ctx.restore();
   }
-  if (raised && !pressed) {
+  if (raised && !pressed && !hollow) {
     path(d.depth);
+    tail(true);
     ctx.fillStyle = tint(d.fillEnd, -40);
     ctx.fill();
   }
-  path(offset);
-  let fill: string | CanvasGradient = d.fill;
-  if (d.gradient) {
-    const a = (d.angle * Math.PI) / 180,
-      cx = p + w / 2,
-      cy = p + offset + h / 2,
-      reach = (Math.abs(w * Math.cos(a)) + Math.abs(h * Math.sin(a))) / 2;
-    const g = ctx.createLinearGradient(
-      cx - Math.cos(a) * reach,
-      cy - Math.sin(a) * reach,
-      cx + Math.cos(a) * reach,
-      cy + Math.sin(a) * reach,
-    );
-    g.addColorStop(0, d.fill);
-    g.addColorStop(1, d.fillEnd);
-    fill = g;
-  }
-  ctx.fillStyle = fill;
-  ctx.fill();
-  if (d.texture && images.has(d.texture)) {
-    ctx.save();
+  if (!hollow) {
+    if (d.kind === "bubble") {
+      tail();
+      ctx.fillStyle = d.gradient ? d.fillEnd : d.fill;
+      ctx.fill();
+      if (d.borderWidth) {
+        ctx.strokeStyle = d.border;
+        ctx.lineWidth = d.borderWidth * 2;
+        ctx.lineJoin = "round";
+        ctx.stroke();
+      }
+    }
     path(offset);
-    ctx.clip();
-    ctx.globalAlpha *= 0.45;
-    ctx.drawImage(images.get(d.texture)!, p, p + offset, w, h);
-    ctx.restore();
+    ctx.fillStyle = buildFill();
+    ctx.fill();
+    if (d.texture && images.has(d.texture)) {
+      const img = images.get(d.texture)!;
+      ctx.save();
+      path(offset);
+      ctx.clip();
+      ctx.globalAlpha *= clamp(d.textureOpacity ?? 45, 0, 100) / 100;
+      const s = clamp(d.textureScale ?? 100, 10, 400) / 100;
+      if (d.textureRepeat) {
+        const pattern = ctx.createPattern(img, "repeat");
+        if (pattern) {
+          pattern.setTransform(new DOMMatrix().translate(p, p + offset).scale(s));
+          ctx.fillStyle = pattern;
+          ctx.fillRect(p, p + offset, w, h);
+        }
+      } else {
+        // Scaled about the centre, so 100% fits the shape exactly.
+        const tw = w * s,
+          th = h * s;
+        ctx.drawImage(img, p + (w - tw) / 2, p + offset + (h - th) / 2, tw, th);
+      }
+      ctx.restore();
+    }
+    if (d.grain > 0) {
+      ctx.save();
+      path(offset);
+      ctx.clip();
+      ctx.globalAlpha *= (clamp(d.grain, 0, 100) / 100) * 0.35;
+      const pattern = ctx.createPattern(noiseTile(), "repeat");
+      if (pattern) {
+        ctx.fillStyle = pattern;
+        ctx.fillRect(p, p + offset, w, h);
+      }
+      ctx.restore();
+    }
   }
   // Windows get a darker title band with a hairline in the border colour.
   const band =
@@ -875,78 +1181,188 @@ export function drawDesign(
   // Inner shadow offsets: the lit side gets the highlight, the far side the shade.
   const toward = (m: number) => [-lx * m, -ly * m] as const,
     away = (m: number) => [lx * m, ly * m] as const;
-  switch (pressed && d.surface !== "flat" ? "engraved" : d.surface) {
-    case "raised":
-      faces(Math.max(1.5, d.depth * 0.45), 0.63 * k, false);
-      break;
-    case "bevel":
-      faces(Math.max(3, d.depth * 1.1), 0.72 * k, false);
-      break;
-    case "embossed": {
-      faces(Math.max(1.5, d.depth * 0.6), 0.46 * k, false);
-      const [hx, hy] = toward(depthPx * 0.7),
-        [sx, sy] = away(depthPx * 0.7);
-      innerShade(`rgba(255,255,255,${0.35 * k})`, depthPx * 1.5 + 2, hx, hy);
-      innerShade(`rgba(0,0,0,${0.35 * k})`, depthPx * 1.5 + 2, sx, sy);
-      break;
+  if (!hollow)
+    switch (pressed && d.surface !== "flat" ? "engraved" : d.surface) {
+      case "raised":
+        faces(Math.max(1.5, d.depth * 0.45), 0.63 * k, false);
+        break;
+      case "bevel":
+        faces(Math.max(3, d.depth * 1.1), 0.72 * k, false);
+        break;
+      case "embossed": {
+        faces(Math.max(1.5, d.depth * 0.6), 0.46 * k, false);
+        const [hx, hy] = toward(depthPx * 0.7),
+          [sx, sy] = away(depthPx * 0.7);
+        innerShade(`rgba(255,255,255,${0.35 * k})`, depthPx * 1.5 + 2, hx, hy);
+        innerShade(`rgba(0,0,0,${0.35 * k})`, depthPx * 1.5 + 2, sx, sy);
+        break;
+      }
+      case "engraved": {
+        faces(Math.max(1.5, d.depth * 0.5), 0.52 * k, true);
+        const [sx, sy] = toward(depthPx * 0.8 + 1);
+        innerShade(`rgba(0,0,0,${0.5 * k})`, depthPx * 2 + 3, sx, sy);
+        break;
+      }
+      case "soft": {
+        const [hx, hy] = toward(depthPx * 0.85 + 1.4),
+          [sx, sy] = away(depthPx * 0.85 + 1.4);
+        innerShade(`rgba(255,255,255,${0.4 * k})`, depthPx * 3 + 8, hx, hy);
+        innerShade(`rgba(0,0,0,${0.35 * k})`, depthPx * 3 + 8, sx, sy);
+        break;
+      }
+      case "glossy": {
+        gloss(k);
+        faces(1.5, 0.4 * k, false);
+        const [sx, sy] = away(2);
+        innerShade(`rgba(0,0,0,${0.3 * k})`, depthPx * 2 + 4, sx, sy);
+        break;
+      }
     }
-    case "engraved": {
-      faces(Math.max(1.5, d.depth * 0.5), 0.52 * k, true);
-      const [sx, sy] = toward(depthPx * 0.8 + 1);
-      innerShade(`rgba(0,0,0,${0.5 * k})`, depthPx * 2 + 3, sx, sy);
-      break;
-    }
-    case "soft": {
-      const [hx, hy] = toward(depthPx * 0.85 + 1.4),
-        [sx, sy] = away(depthPx * 0.85 + 1.4);
-      innerShade(`rgba(255,255,255,${0.4 * k})`, depthPx * 3 + 8, hx, hy);
-      innerShade(`rgba(0,0,0,${0.35 * k})`, depthPx * 3 + 8, sx, sy);
-      break;
-    }
-    case "glossy": {
-      gloss(k);
-      faces(1.5, 0.4 * k, false);
-      const [sx, sy] = away(2);
-      innerShade(`rgba(0,0,0,${0.3 * k})`, depthPx * 2 + 4, sx, sy);
-      break;
-    }
-  }
   if (d.borderWidth) {
-    const outset = borderOutset(d),
-      inset = d.borderWidth - outset;
     // A filled ring preserves rounded corners even for thick inside borders.
-    path(offset, -outset);
-    if (w > inset * 2 && h > inset * 2) path(offset, inset, true);
+    ring();
     ctx.fillStyle = d.border;
     ctx.fill("evenodd");
   }
-  if (state === "hover") {
+  if (state === "hover" && !hollow) {
     path(offset);
     ctx.fillStyle = "rgba(255,255,255,.12)";
     ctx.fill();
   }
-  if (pressed) {
+  if (pressed && !hollow) {
     path(offset);
     ctx.fillStyle = "rgba(0,0,0,.16)";
     ctx.fill();
   }
+  const accent = d.accent ?? d.border,
+    progress = clamp(d.progress ?? 68, 0, 100) / 100;
   if (d.kind === "bar") {
     ctx.save();
     path(offset, 6);
     ctx.clip();
-    ctx.fillStyle = d.accent ?? d.border;
+    ctx.fillStyle = accent;
     if (!d.accent) ctx.globalAlpha *= 0.65;
-    ctx.fillRect(
-      p + 6,
-      p + 6 + offset,
-      ((w - 12) * clamp(d.progress ?? 68, 0, 100)) / 100,
-      h - 12,
-    );
+    ctx.fillRect(p + 6, p + 6 + offset, (w - 12) * progress, h - 12);
     ctx.restore();
   }
-  const text = withText ? d.text : "",
+  if (d.kind === "healthbar") {
+    const inset = 4,
+      gap = 3,
+      n = Math.max(2, Math.round(d.segments ?? 10)),
+      cellW = (w - inset * 2 - gap * (n - 1)) / n,
+      cellH = h - inset * 2,
+      filled = progress * n;
+    ctx.save();
+    path(offset, inset);
+    ctx.clip();
+    for (let i = 0; i < n; i++) {
+      const amount = clamp(filled - i, 0, 1);
+      if (amount <= 0) break;
+      const x = p + inset + i * (cellW + gap);
+      ctx.beginPath();
+      ctx.roundRect(x, p + offset + inset, cellW * amount, cellH, Math.min(3, cellW / 2));
+      ctx.fillStyle = accent;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  if (d.kind === "slider") {
+    ctx.save();
+    path(offset, 0);
+    ctx.clip();
+    ctx.fillStyle = accent;
+    ctx.fillRect(p, p + offset, w * progress, h);
+    ctx.restore();
+    const r = h * 0.9,
+      kx = p + r + (w - r * 2) * progress,
+      ky = p + offset + h / 2;
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.35)";
+    ctx.shadowBlur = 4 * unit;
+    ctx.shadowOffsetY = 2 * unit;
+    ctx.beginPath();
+    ctx.arc(kx, ky, r, 0, Math.PI * 2);
+    ctx.fillStyle = d.textColor;
+    ctx.fill();
+    ctx.restore();
+    if (d.borderWidth) {
+      ctx.beginPath();
+      ctx.arc(kx, ky, r - d.borderWidth / 2, 0, Math.PI * 2);
+      ctx.strokeStyle = d.border;
+      ctx.lineWidth = d.borderWidth;
+      ctx.stroke();
+    }
+  }
+  if (d.kind === "toggle") {
+    const r = (h - 8) / 2,
+      kx = d.on ? p + w - 4 - r : p + 4 + r,
+      ky = p + offset + h / 2;
+    if (!d.on) {
+      path(offset);
+      ctx.fillStyle = "rgba(0,0,0,.28)";
+      ctx.fill();
+    }
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.35)";
+    ctx.shadowBlur = 4 * unit;
+    ctx.shadowOffsetY = 1.5 * unit;
+    ctx.beginPath();
+    ctx.arc(kx, ky, r, 0, Math.PI * 2);
+    ctx.fillStyle = d.textColor;
+    ctx.fill();
+    ctx.restore();
+  }
+  if (d.kind === "checkbox" && d.on) {
+    const s = Math.min(w, h) * 0.6;
+    ctx.save();
+    ctx.translate(p + w / 2, p + offset + h / 2);
+    iconPath(ctx, "check", s);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = d.textColor;
+    ctx.lineWidth = s * 0.18;
+    ctx.stroke();
+    ctx.restore();
+  }
+  if (d.kind === "tabs") {
+    const labels = shown(d, d.text)
+      .split("|")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const names = labels.length ? labels : ["Tab 1", "Tab 2", "Tab 3"],
+      n = names.length,
+      tabW = w / n,
+      active = clamp(Math.round(d.activeTab ?? 0), 0, n - 1);
+    ctx.save();
+    body();
+    ctx.clip();
+    ctx.beginPath();
+    ctx.roundRect(
+      p + active * tabW + 4,
+      p + offset + 4,
+      tabW - 8,
+      h - 8,
+      Math.max(0, Math.min(d.radius - 4, (h - 8) / 2)),
+    );
+    ctx.fillStyle = accent;
+    ctx.globalAlpha *= 0.35;
+    ctx.fill();
+    ctx.restore();
+    if (withText) {
+      applyFont(ctx, d);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      names.forEach((name, i) => {
+        ctx.save();
+        if (i !== active) ctx.globalAlpha *= 0.7;
+        paintText(ctx, d, name, p + i * tabW + tabW / 2, p + offset + h / 2 + 1, unit, tabW - 12);
+        ctx.restore();
+      });
+    }
+  }
+  const text = withText && d.kind !== "tabs" ? shown(d, d.text) : "",
     icon = d.iconData ? "image" : d.icon;
-  ctx.font = `${d.bold ? "700" : "400"} ${d.fontSize}px ${d.font}`;
+  applyFont(ctx, d);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const textW = text ? Math.min(ctx.measureText(text).width, w - 40) : 0,
@@ -954,21 +1370,14 @@ export function drawDesign(
     gap = text && icon ? 12 : 0,
     total = textW + iconSize + gap,
     cy = band ? p + offset + band / 2 : p + h / 2 + offset;
-  const shadowOn = () => {
-    if (!d.textShadow) return;
-    ctx.shadowColor = "rgba(0,0,0,.55)";
-    ctx.shadowBlur = 3 * unit;
-    ctx.shadowOffsetY = 2 * unit;
-  };
-  const shadowOff = () => {
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-  };
   if (icon) {
     ctx.save();
     ctx.translate(p + w / 2 - total / 2 + iconSize / 2, cy);
-    shadowOn();
+    if (d.textShadow) {
+      ctx.shadowColor = "rgba(0,0,0,.55)";
+      ctx.shadowBlur = 3 * unit;
+      ctx.shadowOffsetY = 2 * unit;
+    }
     if (icon === "image") {
       if (images.has(d.iconData))
         ctx.drawImage(
@@ -987,7 +1396,9 @@ export function drawDesign(
         ctx.strokeStyle = d.textOutlineColor;
         ctx.lineWidth = stroke + d.textOutline * 2;
         ctx.stroke();
-        shadowOff();
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
       }
       ctx.fillStyle = d.textColor;
       ctx.strokeStyle = d.textColor;
@@ -998,23 +1409,16 @@ export function drawDesign(
     }
     ctx.restore();
   }
-  if (text) {
-    const tx = p + w / 2 + (iconSize + gap) / 2,
-      ty = cy + 1,
-      maxWidth = Math.max(1, w - 40 - iconSize - gap);
-    ctx.save();
-    shadowOn();
-    if (d.textOutline > 0) {
-      ctx.lineJoin = "round";
-      ctx.lineWidth = d.textOutline * 2;
-      ctx.strokeStyle = d.textOutlineColor;
-      ctx.strokeText(text, tx, ty, maxWidth);
-      shadowOff();
-    }
-    ctx.fillStyle = d.textColor;
-    ctx.fillText(text, tx, ty, maxWidth);
-    ctx.restore();
-  }
+  if (text)
+    paintText(
+      ctx,
+      d,
+      text,
+      p + w / 2 + (iconSize + gap) / 2,
+      cy + 1,
+      unit,
+      Math.max(1, w - 40 - iconSize - gap),
+    );
   ctx.restore();
 }
 export function renderDesign(

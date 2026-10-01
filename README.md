@@ -1,6 +1,6 @@
 # UIM Studio
 
-A personal, browser-based game UI asset designer. Create buttons, panels, windows, slots, progress bars, badges, titles, paragraphs, and animated effects, then export transparent assets for Unity.
+A personal, browser-based game UI asset designer. Create buttons, icon buttons, panels, windows, frames, speech bubbles, slots, progress and health bars, sliders, toggles, checkboxes, tab bars, badges, counters, titles, paragraphs, and animated effects, then export transparent assets for Unity.
 
 ## Run locally
 
@@ -21,16 +21,19 @@ npm run build
 ## Features
 
 - Canvas-based editing and PNG export use the same renderer.
-- Editable dimensions, individual corner radii, rounded or chamfered corners, gradients, borders, shadows, and glows.
+- Editable dimensions, individual corner radii, rounded or chamfered corners, linear or radial gradients with up to four extra colour stops, borders, shadow colour, and glow colour.
 - Seven surfaces: flat, raised 3D block, glossy sheen, chiseled bevel, embossed, engraved, and soft neumorphic lighting, each with a highlight strength and a light angle.
-- Text outline and text shadow, ten built-in icons, and a progress fill amount and colour for bars.
+- Textures with opacity, scale, and tiling, plus a grain overlay. A pixel-art mode renders at a chunky pixel size with no smoothing.
+- Text outline, text shadow, uppercase, letter spacing, ten built-in icons, and uploaded project fonts (TTF, OTF, WOFF, WOFF2) saved inside the project file.
+- Per-state colour overrides for buttons: hover, pressed, and disabled can each use their own fill, border, and text colours.
+- Kind-specific controls: fill amount and colour for bars, sliders, and segmented health bars; on/off for toggles and checkboxes; active tab for tab bars; tail direction for speech bubbles.
 - Numeric controls support sliders, exact typing, and wheel adjustment while hovering over the value. Scroll up to increase and down to decrease; hold Shift for ten times the step.
 - Border color, thickness, and Inside / Center / Outside placement. Outside borders receive extra PNG padding when needed; existing projects keep their inside borders.
 - Eleven starting styles, saved custom styles, and explicit updates to assets linked to a saved style. Hover a saved style to delete it; linked assets keep their look.
 - Default, hover, pressed, and disabled state previews.
 - Text, system fonts, built-in icons, uploaded icons, and image textures.
-- Undo/redo, asset creation/duplication/removal, and a draggable screen builder. ⌘D (Ctrl+D on Windows) duplicates the selected asset.
-- Custom screen dimensions (64–4096 px), common resolution presets, orientation swap, fit/zoom, and precise asset coordinates.
+- Undo/redo, asset creation/duplication/removal, and a draggable screen builder. ⌘D duplicates, ⌘C and ⌘V copy and paste assets, and ⌘A selects everything on a screen. Assets can be locked, hidden, and reordered by dragging rows in the list.
+- Several screens per project (menu, HUD, pause…) sharing one asset library, each with its own layout. Custom screen dimensions (64–4096 px), common resolution presets, orientation swap, fit/zoom, rulers, an optional grid with snap-to-grid, and precise asset coordinates.
 - Solid, gradient, transparent, or uploaded image backgrounds, saved with the project.
 - Whole-screen PNG export at the exact chosen resolution, without editor guides.
 - Device-local autosave in IndexedDB and portable `.uim.json` files, including imported image data.
@@ -44,11 +47,11 @@ Use the project menu beside the logo to rename the project, save or open a proje
 
 ## Build a screen
 
-Open **Screen builder**, then use the **Screen** tab in the right inspector to name the screen, set its width and height, choose a resolution preset, or change the background. Background images support fill/crop, fit inside, and stretch.
+Open **Screen builder**, then use the **Screen** tab in the right inspector to manage screens, name the current one, set its width and height, choose a resolution preset, turn on rulers, the grid, and snap-to-grid, or change the background. Background images support fill/crop, fit inside, and stretch. Assets are shared between screens: clicking an asset in the list places it on the current screen, and **Remove from this screen** takes it off again without deleting it.
 
-Click an asset to drag it or edit its **Asset** properties, including X/Y coordinates, six **Align to screen** buttons, **Center on screen**, and **Stacking order**. Dragging snaps to the screen edges and centre and to other assets, with dashed guides; hold Shift to lock the drag to one axis and Option (Alt) to drag freely. Click empty space or press Escape to return to screen settings. Arrow keys move a selected asset by 1 pixel; Shift+Arrow moves it by 10 pixels. Delete or Backspace removes the selected asset, with Undo offered in the toast. Resizing preserves existing asset positions. **Fit** shows the whole screen; percentage zoom enables scrolling for larger screens.
+Click an asset to drag it, drag its handles to resize it (Shift keeps the aspect ratio, Option resizes from the centre), or edit its **Asset** properties, including X/Y coordinates, six align buttons, **Center on screen**, and **Stacking order**. Shift-click or drag across empty space to select several assets; alignment then works within the selection and three or more can be spaced evenly. Dragging snaps to the screen edges and centre, to other assets, and to the grid when enabled, with dashed guides; hold Shift to lock the drag to one axis, Option to drag out duplicates, and ⌘ (Ctrl) to skip snapping. Click empty space or press Escape to return to screen settings. Arrow keys move a selected asset by 1 pixel; Shift+Arrow moves it by 10 pixels. Delete or Backspace removes the selected asset, with Undo offered in the toast. Resizing preserves existing asset positions. **Fit** shows the whole screen; percentage zoom enables scrolling for larger screens.
 
-Changing an asset's width or height keeps it centred on its current spot. Panels and windows always draw behind other assets, and titles and paragraphs draw on top. Titles and paragraphs are text-only assets with alignment, line height, word wrapping, outline, and shadow. **Export screen** saves a flattened PNG at the chosen dimensions, with no handles or guides. Individual asset export remains available in **Designer**. Existing project files automatically receive the original 960 × 640 screen defaults.
+Changing an asset's width or height keeps it centred on its current spot. Panels and windows always draw behind other assets, and titles and paragraphs draw on top. Titles and paragraphs are text-only assets with alignment, line height, word wrapping, outline, and shadow. **Export screen** saves a flattened PNG of the current screen at the chosen dimensions, with no handles or guides, and **Export all screens** saves one per screen. The **Export** tab's stretch preview shows how an asset will look at another size with its protected 9-slice border. Individual asset export remains available in **Designer**. Existing project files automatically receive the original 960 × 640 screen defaults.
 
 ## Unity
 
@@ -61,9 +64,9 @@ The importer preserves transparent effect padding and applies sprite borders. Ex
 
 Pixels per unit is 100 times the export scale, so a 2× or 4× pack keeps the same size and border thickness on screen as 1×.
 
-### Screen prefab
+### Screen prefabs
 
-A kit export carries the Screen builder layout in the manifest: the screen's name and size, and every placed asset's name, kind, file, position and size at 1×, in draw order (panels first). In Unity, select `uim-manifest.json` and choose **Tools → UIM Studio → Build screen prefab**: a prefab named after the screen appears beside the manifest, one Image per asset at its exact position and size, sliced where borders exist, with a Button and Sprite Swap states where the asset had states. Re-export under the same file names and existing prefabs keep their sprites.
+A kit export carries every screen's layout in the manifest: each screen's name and size, and every placed asset's name, kind, file, position and size at 1×, in draw order (panels first, text last). Titles and paragraphs also carry their text, font size, colour, alignment, and line height. In Unity, select `uim-manifest.json` and choose **Tools → UIM Studio → Build screen prefabs**: one prefab per screen appears beside the manifest, one Image per asset at its exact position and size, sliced where borders exist, with a Button and Sprite Swap states where the asset had states, and titles and paragraphs as editable text objects (TextMeshPro when the package is installed, otherwise UI Text). Re-export under the same file names and existing prefabs keep their sprites.
 
 Presets include **Mobile tall · 1080 × 2228** for a full-height phone board.
 
