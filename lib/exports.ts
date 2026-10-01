@@ -11,7 +11,7 @@ import {
 import { createZip } from "./zip";
 import { renderEffect } from "./effects";
 import type { Effect } from "./project";
-import type { ScreenSettings } from "./screen";
+import { orderedScreenAssets, type ScreenSettings } from "./screen";
 export async function exportAssets(
   assets: Design[],
   scale: number,
@@ -22,7 +22,12 @@ export async function exportAssets(
 ) {
   const files: { name: string; data: Blob | string }[] = [],
     entries: object[] = [],
-    placements: object[] = [];
+    placements: { kind: string; order: number; placement: object }[] = [];
+  // Draw order of the screen builder: panels first, then the rest. The
+  // Unity importer stacks children in manifest order, bottom first.
+  const drawOrder = new Map(
+    orderedScreenAssets(assets).map((a, i) => [a.id, i] as const),
+  );
   for (const [index, original] of assets.entries()) {
     const d = withText
       ? original
@@ -58,12 +63,17 @@ export async function exportAssets(
     // the Unity importer builds a frame prefab from these.
     if (screen && original.x !== undefined && original.y !== undefined)
       placements.push({
-        name: d.name,
-        file: firstFile,
-        x: original.x,
-        y: original.y,
-        width: d.width,
-        height: d.height,
+        kind: d.kind,
+        order: drawOrder.get(d.id) ?? index,
+        placement: {
+          name: d.name,
+          kind: d.kind,
+          file: firstFile,
+          x: original.x,
+          y: original.y,
+          width: d.width,
+          height: d.height,
+        },
       });
   }
   files.push({
@@ -79,7 +89,9 @@ export async function exportAssets(
               name: screen.name,
               width: screen.width,
               height: screen.height,
-              assets: placements,
+              assets: placements
+                .sort((a, b) => a.order - b.order)
+                .map((p) => p.placement),
             }
           : undefined,
       },
