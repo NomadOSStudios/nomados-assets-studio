@@ -558,46 +558,33 @@ export function drawDesign(
     ctx.fill("evenodd");
     ctx.restore();
   };
-  // Four bevel faces lit from the top left, clipped to a ring inside the edge.
-  const faces = (width: number, strength: number, inverted: boolean) => {
-    const b = Math.min(width, Math.min(w, h) / 2 - 1);
-    if (b <= 0 || strength <= 0) return;
+  // One lit rim: the sliver of the body left uncovered by a copy of itself
+  // nudged by (dx, dy). It hugs the outline, so curves and chamfers shade
+  // correctly instead of following the bounding box.
+  const rim = (dx: number, dy: number, color: string) => {
     ctx.save();
     body();
     ctx.clip();
-    path(offset, 0);
-    path(offset, b, true);
-    ctx.clip("evenodd");
-    const x0 = p,
-      y0 = p + offset,
-      x1 = p + w,
-      y1 = p + offset + h;
+    ctx.beginPath();
+    path(offset, 0, true);
+    ctx.translate(dx, dy);
+    path(offset, 0, true);
+    ctx.translate(-dx, -dy);
+    ctx.fillStyle = color;
+    ctx.fill("evenodd");
+    ctx.restore();
+  };
+  // Bevel lighting from the top left: bright top, lighter left, dark bottom,
+  // dimmer right. Inverted for sunken surfaces.
+  const faces = (width: number, strength: number, inverted: boolean) => {
+    const b = Math.min(width, Math.min(w, h) / 2 - 1);
+    if (b <= 0 || strength <= 0) return;
     const light = (a: number) => `rgba(255,255,255,${a})`,
       dark = (a: number) => `rgba(0,0,0,${a})`;
-    const face = (pts: number[][], color: string) => {
-      ctx.beginPath();
-      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
-    };
-    face(
-      [[x0, y0], [x1, y0], [x1 - b, y0 + b], [x0 + b, y0 + b]],
-      inverted ? dark(strength) : light(strength),
-    );
-    face(
-      [[x1, y0], [x1, y1], [x1 - b, y1 - b], [x1 - b, y0 + b]],
-      inverted ? light(strength * 0.4) : dark(strength * 0.45),
-    );
-    face(
-      [[x1, y1], [x0, y1], [x0 + b, y1 - b], [x1 - b, y1 - b]],
-      inverted ? light(strength * 0.7) : dark(strength * 0.8),
-    );
-    face(
-      [[x0, y1], [x0, y0], [x0 + b, y0 + b], [x0 + b, y1 - b]],
-      inverted ? dark(strength * 0.55) : light(strength * 0.55),
-    );
-    ctx.restore();
+    rim(0, b, inverted ? dark(strength) : light(strength));
+    rim(b, 0, inverted ? dark(strength * 0.55) : light(strength * 0.55));
+    rim(0, -b, inverted ? light(strength * 0.7) : dark(strength * 0.8));
+    rim(-b, 0, inverted ? light(strength * 0.4) : dark(strength * 0.45));
   };
   // Glass sheen across the top half.
   const gloss = (strength: number) => {
