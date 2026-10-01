@@ -67,6 +67,7 @@ import { ScreenInspector } from "./screen-inspector";
 import {
   defaultScreen,
   fitScreenAsset,
+  resizeAboutCenter,
   renderScreen,
   type ScreenSettings,
 } from "@/lib/screen";
@@ -243,7 +244,17 @@ export default function Studio() {
   const patch = (v: Partial<Design>) =>
     change((p) => ({
       ...p,
-      assets: p.assets.map((a) => (a.id === d.id ? { ...a, ...v } : a)),
+      assets: p.assets.map((a) => {
+        if (a.id !== d.id) return a;
+        const next = { ...a, ...v };
+        // Width and height changes keep the asset centred where it sits.
+        if (next.width !== a.width || next.height !== a.height)
+          Object.assign(
+            next,
+            resizeAboutCenter(a, p.screen ?? defaultScreen, next.width, next.height),
+          );
+        return next;
+      }),
     }));
   const patchScreen = (update: Partial<ScreenSettings>) =>
     change((p) => ({

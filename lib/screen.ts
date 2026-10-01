@@ -237,6 +237,32 @@ export async function renderScreen(screen: ScreenSettings, assets: Design[]) {
   return canvas;
 }
 
+/**
+ * Position for an asset resized about its centre. A 1 px change moves the
+ * centre by half a pixel, so half-pixel results round by the new size's
+ * parity: alternate steps go left and right, and stepping back returns the
+ * original position instead of drifting.
+ */
+export function resizeAboutCenter(
+  asset: Design,
+  screen: ScreenSettings,
+  width: number,
+  height: number,
+) {
+  const place = (position: number, before: number, after: number) => {
+    const ideal = position + before / 2 - after / 2;
+    if (Number.isInteger(ideal) || !Number.isInteger(ideal * 2))
+      return Math.round(ideal);
+    return after % 2 === 0 ? Math.floor(ideal) : Math.ceil(ideal);
+  };
+  return fitScreenAsset(
+    { ...asset, width, height },
+    screen,
+    place(asset.x ?? 0, asset.width, width),
+    place(asset.y ?? 0, asset.height, height),
+  );
+}
+
 export function fitScreenAsset(
   asset: Design,
   screen: ScreenSettings,
