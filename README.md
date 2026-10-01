@@ -22,7 +22,7 @@ npm run build
 
 - Canvas-based editing and PNG export use the same renderer.
 - Editable dimensions, individual corner radii, rounded or chamfered corners, gradients, borders, shadows, and glows.
-- Seven surfaces: flat, raised 3D block, glossy sheen, chiseled bevel, embossed, engraved, and soft neumorphic lighting, each with a highlight strength.
+- Seven surfaces: flat, raised 3D block, glossy sheen, chiseled bevel, embossed, engraved, and soft neumorphic lighting, each with a highlight strength and a light angle.
 - Text outline and text shadow, ten built-in icons, and a progress fill amount and colour for bars.
 - Numeric controls support sliders, exact typing, and wheel adjustment while hovering over the value. Scroll up to increase and down to decrease; hold Shift for ten times the step.
 - Border color, thickness, and Inside / Center / Outside placement. Outside borders receive extra PNG padding when needed; existing projects keep their inside borders.

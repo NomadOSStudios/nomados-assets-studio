@@ -58,6 +58,7 @@ export const designSchema = z.object({
   // Fields added after version one default so older projects open unchanged.
   shape: z.enum(["round", "cut"]).default("round"),
   highlight: num(0, 100).default(60),
+  lightAngle: num(0, 360).default(120),
   textOutline: num(0, 8).default(0),
   textOutlineColor: color.default("#000000"),
   textShadow: z.boolean().default(false),
@@ -132,6 +133,7 @@ export const styleKeys = [
   "texture",
   "shape",
   "highlight",
+  "lightAngle",
   "textOutline",
   "textOutlineColor",
   "textShadow",

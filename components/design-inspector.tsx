@@ -208,13 +208,26 @@ export function DesignInspector({
           onChange={(v) => patch({ surface: v as Surface })}
         />
         {d.surface !== "flat" && (
-          <Range
-            label="Highlight"
-            value={d.highlight}
-            max={100}
-            suffix="%"
-            onChange={(highlight) => patch({ highlight })}
-          />
+          <>
+            <Range
+              label="Highlight"
+              value={d.highlight}
+              max={100}
+              suffix="%"
+              onChange={(highlight) => patch({ highlight })}
+            />
+            <Range
+              label="Light angle"
+              value={d.lightAngle}
+              max={360}
+              suffix="°"
+              onChange={(lightAngle) => patch({ lightAngle })}
+            />
+            <p className="help-text">
+              90° lights from the top, 180° from the left. Bevels, emboss,
+              engrave, and soft shading all follow it.
+            </p>
+          </>
         )}
         <Range
           label="Depth"

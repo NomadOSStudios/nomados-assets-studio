@@ -72,6 +72,7 @@ export interface Design {
   iconData: string;
   shape: Shape;
   highlight: number;
+  lightAngle: number;
   textOutline: number;
   textOutlineColor: string;
   textShadow: boolean;
@@ -103,6 +104,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "round",
       highlight: 60,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: false,
     },
@@ -123,6 +125,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "round",
       highlight: 55,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: false,
     },
@@ -143,6 +146,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "round",
       highlight: 70,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: true,
     },
@@ -163,6 +167,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "round",
       highlight: 60,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: false,
     },
@@ -183,6 +188,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "cut",
       highlight: 0,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: false,
     },
@@ -203,6 +209,7 @@ export const presets: Preset[] = [
       gradient: false,
       shape: "round",
       highlight: 0,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: false,
     },
@@ -223,6 +230,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "round",
       highlight: 75,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: true,
     },
@@ -243,6 +251,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "round",
       highlight: 60,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: false,
     },
@@ -263,6 +272,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "cut",
       highlight: 70,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: true,
     },
@@ -283,6 +293,7 @@ export const presets: Preset[] = [
       gradient: true,
       shape: "round",
       highlight: 65,
+      lightAngle: 120,
       textOutline: 1.5,
       textOutlineColor: "#831843",
       textShadow: false,
@@ -307,6 +318,7 @@ export const presets: Preset[] = [
       gradient: false,
       shape: "cut",
       highlight: 0,
+      lightAngle: 120,
       textOutline: 0,
       textShadow: false,
     },
@@ -346,6 +358,7 @@ export const baseDesign: Design = {
   iconData: "",
   shape: "round",
   highlight: 60,
+  lightAngle: 120,
   textOutline: 0,
   textOutlineColor: "#000000",
   textShadow: false,
@@ -507,7 +520,11 @@ export function drawDesign(
     offset = pressed ? d.depth : 0,
     k = clamp(d.highlight ?? 60, 0, 100) / 100,
     // Canvas shadows ignore the transform, so blur and offsets are scaled by hand.
-    unit = Math.abs(ctx.getTransform().a) || 1;
+    unit = Math.abs(ctx.getTransform().a) || 1,
+    // Unit vector toward the light in canvas space (y down). 90° is straight up.
+    phi = (((d.lightAngle ?? 120) % 360) * Math.PI) / 180,
+    lx = Math.cos(phi),
+    ly = -Math.sin(phi);
   const corners = d.independentCorners
     ? d.corners
     : [d.radius, d.radius, d.radius, d.radius];
@@ -558,23 +575,20 @@ export function drawDesign(
     ctx.fill("evenodd");
     ctx.restore();
   };
-  // Bevel lighting on a ring of uniform width just inside the edge, lit from
-  // the top left. Straight edges take flat faces split by 45° miters, arcs
-  // blend the two neighbouring faces around their own centre, and chamfers
-  // take the flat tone in between. Inverted for sunken surfaces.
+  // Bevel lighting on a ring of uniform width just inside the edge. Each
+  // point is lit by how squarely its edge faces the light: straight edges
+  // take flat faces split by 45° miters, arcs sweep a conic gradient around
+  // their own centre, and chamfers take their single 45° tone. Inverted for
+  // sunken surfaces.
   const faces = (width: number, strength: number, inverted: boolean) => {
     const b = Math.min(width, Math.min(w, h) / 2 - 1);
     if (b <= 0 || strength <= 0) return;
-    const sign = inverted ? -1 : 1;
-    // Lighting value by edge direction: +1 faces the light, -1 faces away.
+    const dir = inverted ? -1 : 1;
+    const lit = (nx: number, ny: number) => (nx * lx + ny * ly) * dir;
     const shade = (v: number) =>
-      v * sign >= 0
-        ? `rgba(255,255,255,${Math.abs(v) * strength})`
-        : `rgba(0,0,0,${Math.abs(v) * strength})`;
-    const vTop = 1,
-      vLeft = 0.55,
-      vBottom = -0.8,
-      vRight = -0.45;
+      v >= 0
+        ? `rgba(255,255,255,${v * strength})`
+        : `rgba(0,0,0,${-v * 0.8 * strength})`;
     const x0 = p,
       y0 = p + offset,
       x1 = p + w,
@@ -644,18 +658,14 @@ export function drawDesign(
       ctx.fillStyle = shade(v);
       ctx.fill();
     };
-    wedge([[x0, y0], [x1, y0], [x1 - m, y0 + m], [x0 + m, y0 + m]], vTop);
-    wedge([[x1, y0], [x1, y1], [x1 - m, y1 - m], [x1 - m, y0 + m]], vRight);
-    wedge([[x1, y1], [x0, y1], [x0 + m, y1 - m], [x1 - m, y1 - m]], vBottom);
-    wedge([[x0, y1], [x0, y0], [x0 + m, y0 + m], [x0 + m, y1 - m]], vLeft);
+    wedge([[x0, y0], [x1, y0], [x1 - m, y0 + m], [x0 + m, y0 + m]], lit(0, -1));
+    wedge([[x1, y0], [x1, y1], [x1 - m, y1 - m], [x1 - m, y0 + m]], lit(1, 0));
+    wedge([[x1, y1], [x0, y1], [x0 + m, y1 - m], [x1 - m, y1 - m]], lit(0, 1));
+    wedge([[x0, y1], [x0, y0], [x0 + m, y0 + m], [x0 + m, y1 - m]], lit(-1, 0));
     ctx.restore();
-    // Corners. Conic angles run clockwise from +x, so left is π and up is 3π/2.
-    const blends: [number, number, number][] = [
-      [Math.PI, vLeft, vTop],
-      [Math.PI * 1.5, vTop, vRight],
-      [0, vRight, vBottom],
-      [Math.PI / 2, vBottom, vLeft],
-    ];
+    // Corners. Conic angles run clockwise from +x, so the outward normal at
+    // angle a is (cos a, sin a); each corner covers a quarter turn.
+    const starts = [Math.PI, Math.PI * 1.5, 0, Math.PI / 2];
     const centers = [
       [x0 + radii[0], y0 + radii[0]],
       [x1 - radii[1], y0 + radii[1]],
@@ -664,18 +674,20 @@ export function drawDesign(
     ];
     [0, 1, 2, 3].forEach((corner) => {
       if (radii[corner] <= 0) return;
-      const [start, from, to] = blends[corner];
+      const start = starts[corner];
+      const at = (turn: number) =>
+        lit(Math.cos(start + turn * Math.PI * 2), Math.sin(start + turn * Math.PI * 2));
       ctx.save();
       ctx.beginPath();
       cornerRegion(corner);
       ctx.clip();
-      if (cut) ctx.fillStyle = shade((from + to) / 2);
+      if (cut) ctx.fillStyle = shade(at(0.125));
       else {
         const [cx, cy] = centers[corner];
         const g = ctx.createConicGradient(start, cx, cy);
-        g.addColorStop(0, shade(from));
-        g.addColorStop(0.25, shade(to));
-        g.addColorStop(1, shade(from));
+        for (let i = 0; i <= 4; i++)
+          g.addColorStop(i / 16, shade(at(i / 16)));
+        g.addColorStop(1, shade(at(0)));
         ctx.fillStyle = g;
       }
       ctx.fillRect(x0, y0, w, h);
@@ -777,56 +789,44 @@ export function drawDesign(
     ctx.restore();
   }
   const depthPx = Math.max(1, d.depth);
+  // Inner shadow offsets: the lit side gets the highlight, the far side the shade.
+  const toward = (m: number) => [-lx * m, -ly * m] as const,
+    away = (m: number) => [lx * m, ly * m] as const;
   switch (pressed && d.surface !== "flat" ? "engraved" : d.surface) {
     case "raised":
-      faces(Math.max(1.5, d.depth * 0.45), 0.55 * k, false);
+      faces(Math.max(1.5, d.depth * 0.45), 0.63 * k, false);
       break;
     case "bevel":
-      faces(Math.max(3, d.depth * 1.1), 0.62 * k, false);
+      faces(Math.max(3, d.depth * 1.1), 0.72 * k, false);
       break;
-    case "embossed":
-      faces(Math.max(1.5, d.depth * 0.6), 0.4 * k, false);
-      innerShade(
-        `rgba(255,255,255,${0.35 * k})`,
-        depthPx * 1.5 + 2,
-        depthPx * 0.5,
-        depthPx * 0.5,
-      );
-      innerShade(
-        `rgba(0,0,0,${0.35 * k})`,
-        depthPx * 1.5 + 2,
-        -depthPx * 0.5,
-        -depthPx * 0.5,
-      );
+    case "embossed": {
+      faces(Math.max(1.5, d.depth * 0.6), 0.46 * k, false);
+      const [hx, hy] = toward(depthPx * 0.7),
+        [sx, sy] = away(depthPx * 0.7);
+      innerShade(`rgba(255,255,255,${0.35 * k})`, depthPx * 1.5 + 2, hx, hy);
+      innerShade(`rgba(0,0,0,${0.35 * k})`, depthPx * 1.5 + 2, sx, sy);
       break;
-    case "engraved":
-      faces(Math.max(1.5, d.depth * 0.5), 0.45 * k, true);
-      innerShade(
-        `rgba(0,0,0,${0.5 * k})`,
-        depthPx * 2 + 3,
-        depthPx * 0.4,
-        depthPx * 0.7 + 1,
-      );
+    }
+    case "engraved": {
+      faces(Math.max(1.5, d.depth * 0.5), 0.52 * k, true);
+      const [sx, sy] = toward(depthPx * 0.8 + 1);
+      innerShade(`rgba(0,0,0,${0.5 * k})`, depthPx * 2 + 3, sx, sy);
       break;
-    case "soft":
-      innerShade(
-        `rgba(255,255,255,${0.4 * k})`,
-        depthPx * 3 + 8,
-        depthPx * 0.6 + 1,
-        depthPx * 0.6 + 1,
-      );
-      innerShade(
-        `rgba(0,0,0,${0.35 * k})`,
-        depthPx * 3 + 8,
-        -(depthPx * 0.6 + 1),
-        -(depthPx * 0.6 + 1),
-      );
+    }
+    case "soft": {
+      const [hx, hy] = toward(depthPx * 0.85 + 1.4),
+        [sx, sy] = away(depthPx * 0.85 + 1.4);
+      innerShade(`rgba(255,255,255,${0.4 * k})`, depthPx * 3 + 8, hx, hy);
+      innerShade(`rgba(0,0,0,${0.35 * k})`, depthPx * 3 + 8, sx, sy);
       break;
-    case "glossy":
+    }
+    case "glossy": {
       gloss(k);
-      faces(1.5, 0.35 * k, false);
-      innerShade(`rgba(0,0,0,${0.3 * k})`, depthPx * 2 + 4, 0, -2);
+      faces(1.5, 0.4 * k, false);
+      const [sx, sy] = away(2);
+      innerShade(`rgba(0,0,0,${0.3 * k})`, depthPx * 2 + 4, sx, sy);
       break;
+    }
   }
   if (d.borderWidth) {
     const outset = borderOutset(d),
