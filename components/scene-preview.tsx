@@ -6,8 +6,17 @@ import {
   loadScreenImage,
   orderedScreenAssets,
   fitScreenAsset,
+  snapPosition,
   type ScreenSettings,
+  type SnapGuides,
 } from "@/lib/screen";
+
+const noGuides: SnapGuides = { x: [], y: [] };
+const sameGuides = (a: SnapGuides, b: SnapGuides) =>
+  a.x.length === b.x.length &&
+  a.y.length === b.y.length &&
+  a.x.every((v, i) => v === b.x[i]) &&
+  a.y.every((v, i) => v === b.y[i]);
 
 export function ScenePreview({
   assets,
@@ -26,8 +35,15 @@ export function ScenePreview({
 }) {
   const ref = useRef<HTMLCanvasElement>(null),
     viewport = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: string; dx: number; dy: number } | null>(null);
+  const drag = useRef<{
+    id: string;
+    dx: number;
+    dy: number;
+    x0: number;
+    y0: number;
+  } | null>(null);
   const [size, setSize] = useState({ width: 600, height: 450 });
+  const [guides, setGuides] = useState<SnapGuides>(noGuides);
   const [imageError, setImageError] = useState("");
   const ordered = orderedScreenAssets(assets);
   const fit = Math.min(
@@ -74,6 +90,23 @@ export function ScenePreview({
         0,
       );
       drawScreen(ctx, screen, assets, image, selected);
+      if (guides.x.length || guides.y.length) {
+        ctx.save();
+        ctx.strokeStyle = "#b5eb68";
+        ctx.lineWidth = screen.width / canvas.width;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        for (const x of guides.x) {
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, screen.height);
+        }
+        for (const y of guides.y) {
+          ctx.moveTo(0, y);
+          ctx.lineTo(screen.width, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     paint();
     setImageError("");
@@ -88,7 +121,7 @@ export function ScenePreview({
     return () => {
       active = false;
     };
-  }, [assets, screen, selected, displayWidth, displayHeight]);
+  }, [assets, screen, selected, displayWidth, displayHeight, guides]);
   function point(e: React.PointerEvent<HTMLCanvasElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     return {
@@ -134,26 +167,57 @@ export function ScenePreview({
                   id: asset.id,
                   dx: p.x - (asset.x ?? 0),
                   dy: p.y - (asset.y ?? 0),
+                  x0: asset.x ?? 0,
+                  y0: asset.y ?? 0,
                 };
                 e.currentTarget.setPointerCapture(e.pointerId);
               }
               e.currentTarget.focus({ preventScroll: true });
             }}
             onPointerMove={(e) => {
-              if (drag.current) {
-                const p = point(e);
-                move(
-                  drag.current.id,
-                  p.x - drag.current.dx,
-                  p.y - drag.current.dy,
-                );
+              const g = drag.current;
+              if (!g) return;
+              const p = point(e);
+              let x = p.x - g.dx,
+                y = p.y - g.dy,
+                lock: "x" | "y" | null = null;
+              // Shift keeps the drag on whichever axis has moved further.
+              if (e.shiftKey) {
+                if (Math.abs(x - g.x0) >= Math.abs(y - g.y0)) {
+                  y = g.y0;
+                  lock = "y";
+                } else {
+                  x = g.x0;
+                  lock = "x";
+                }
               }
+              const asset = assets.find((a) => a.id === g.id);
+              let next = noGuides;
+              // Alt (Option) drags freely without snapping.
+              if (asset && !e.altKey) {
+                const snapped = snapPosition(
+                  asset,
+                  x,
+                  y,
+                  screen,
+                  assets,
+                  8 / scale,
+                  lock,
+                );
+                x = snapped.x;
+                y = snapped.y;
+                next = snapped.guides;
+              }
+              setGuides((prev) => (sameGuides(prev, next) ? prev : next));
+              move(g.id, x, y);
             }}
             onPointerUp={() => {
               drag.current = null;
+              setGuides(noGuides);
             }}
             onPointerCancel={() => {
               drag.current = null;
+              setGuides(noGuides);
             }}
             onKeyDown={(e) => {
               if (

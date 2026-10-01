@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { baseDesign, defaultAssets, type Design, type Preset } from "./studio";
+import {
+  defaultAssets,
+  iconNames,
+  type Design,
+  type Preset,
+} from "./studio";
 import { defaultScreen, type ScreenSettings } from "./screen";
 const num = (min: number, max: number) => z.number().finite().min(min).max(max);
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
@@ -13,7 +18,7 @@ const image = z
 export const designSchema = z.object({
   id: z.string().min(1).max(100),
   name: z.string().min(1).max(80),
-  kind: z.enum(["button", "panel", "slot", "bar"]),
+  kind: z.enum(["button", "panel", "slot", "bar", "badge", "window"]),
   width: num(24, 1024),
   height: num(24, 1024),
   radius: num(0, 512),
@@ -27,7 +32,15 @@ export const designSchema = z.object({
   borderWidth: num(0, 12),
   borderPosition: z.enum(["inside", "center", "outside"]).default("inside"),
   depth: num(0, 16),
-  surface: z.enum(["raised", "flat", "embossed", "engraved"]),
+  surface: z.enum([
+    "raised",
+    "flat",
+    "embossed",
+    "engraved",
+    "glossy",
+    "bevel",
+    "soft",
+  ]),
   shadow: num(0, 100),
   shadowBlur: num(0, 40),
   shadowOffset: num(0, 40),
@@ -40,8 +53,16 @@ export const designSchema = z.object({
   includeText: z.boolean(),
   slice: num(0, 512),
   texture: image,
-  icon: z.enum(["", "play", "plus", "star"]),
+  icon: z.enum(iconNames),
   iconData: image,
+  // Fields added after version one default so older projects open unchanged.
+  shape: z.enum(["round", "cut"]).default("round"),
+  highlight: num(0, 100).default(60),
+  textOutline: num(0, 8).default(0),
+  textOutlineColor: color.default("#000000"),
+  textShadow: z.boolean().default(false),
+  progress: num(0, 100).default(68),
+  accent: color.optional(),
   themeId: z.string().max(80).optional(),
   x: num(0, 4096).default(300),
   y: num(0, 4096).default(260),
@@ -109,6 +130,12 @@ export const styleKeys = [
   "font",
   "bold",
   "texture",
+  "shape",
+  "highlight",
+  "textOutline",
+  "textOutlineColor",
+  "textShadow",
+  "accent",
 ] as const;
 export function styleValues(d: Design): Partial<Design> {
   return Object.fromEntries(styleKeys.map((k) => [k, d[k]]));

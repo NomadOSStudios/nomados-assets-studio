@@ -83,10 +83,61 @@ export function loadScreenImage(
   return pending;
 }
 
+const behind = (a: Design) => a.kind === "panel" || a.kind === "window";
 export function orderedScreenAssets(assets: Design[]) {
-  return [...assets].sort(
-    (a, b) => Number(a.kind !== "panel") - Number(b.kind !== "panel"),
-  );
+  return [...assets].sort((a, b) => Number(!behind(a)) - Number(!behind(b)));
+}
+
+export type SnapGuides = { x: number[]; y: number[] };
+/**
+ * Pulls a dragged asset onto the screen edges and centre, and onto the edges
+ * and centres of the other assets, when an edge or its centre is within
+ * `threshold` screen pixels. A locked axis is left alone.
+ */
+export function snapPosition(
+  asset: Design,
+  x: number,
+  y: number,
+  screen: ScreenSettings,
+  assets: Design[],
+  threshold: number,
+  lock: "x" | "y" | null = null,
+) {
+  const lines: SnapGuides = {
+    x: [0, screen.width / 2, screen.width],
+    y: [0, screen.height / 2, screen.height],
+  };
+  for (const o of assets) {
+    if (o.id === asset.id || o.x === undefined || o.y === undefined) continue;
+    lines.x.push(o.x, o.x + o.width / 2, o.x + o.width);
+    lines.y.push(o.y, o.y + o.height / 2, o.y + o.height);
+  }
+  const guides: SnapGuides = { x: [], y: [] };
+  const snapAxis = (value: number, size: number, candidates: number[]) => {
+    let best: { distance: number; value: number; line: number } | undefined;
+    for (const line of candidates)
+      for (const anchor of [0, size / 2, size]) {
+        const distance = Math.abs(value + anchor - line);
+        if (distance <= threshold && (!best || distance < best.distance))
+          best = { distance, value: line - anchor, line };
+      }
+    return best;
+  };
+  if (lock !== "x") {
+    const s = snapAxis(x, asset.width, lines.x);
+    if (s) {
+      x = s.value;
+      guides.x.push(s.line);
+    }
+  }
+  if (lock !== "y") {
+    const s = snapAxis(y, asset.height, lines.y);
+    if (s) {
+      y = s.value;
+      guides.y.push(s.line);
+    }
+  }
+  return { x, y, guides };
 }
 
 export function drawScreen(

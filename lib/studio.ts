@@ -1,7 +1,43 @@
-export type AssetKind = "button" | "panel" | "slot" | "bar";
+export type AssetKind =
+  | "button"
+  | "panel"
+  | "slot"
+  | "bar"
+  | "badge"
+  | "window";
 export type ButtonState = "normal" | "hover" | "pressed" | "disabled";
-export type Surface = "raised" | "flat" | "embossed" | "engraved";
+export type Surface =
+  | "raised"
+  | "flat"
+  | "embossed"
+  | "engraved"
+  | "glossy"
+  | "bevel"
+  | "soft";
+export type Shape = "round" | "cut";
 export type BorderPosition = "inside" | "center" | "outside";
+export const surfaces: { value: Surface; label: string }[] = [
+  { value: "flat", label: "Flat" },
+  { value: "raised", label: "Raised · 3D block" },
+  { value: "glossy", label: "Glossy · glass sheen" },
+  { value: "bevel", label: "Bevel · chiseled edge" },
+  { value: "embossed", label: "Embossed · lifted" },
+  { value: "engraved", label: "Engraved · sunken" },
+  { value: "soft", label: "Soft · rounded light" },
+];
+export const iconNames = [
+  "",
+  "play",
+  "pause",
+  "plus",
+  "star",
+  "heart",
+  "check",
+  "close",
+  "arrow",
+  "gear",
+] as const;
+export type IconName = (typeof iconNames)[number];
 export interface Design {
   id: string;
   name: string;
@@ -34,6 +70,13 @@ export interface Design {
   texture: string;
   icon: string;
   iconData: string;
+  shape: Shape;
+  highlight: number;
+  textOutline: number;
+  textOutlineColor: string;
+  textShadow: boolean;
+  progress: number;
+  accent?: string;
   themeId?: string;
   x?: number;
   y?: number;
@@ -58,6 +101,10 @@ export const presets: Preset[] = [
       shadow: 40,
       glow: 0,
       gradient: true,
+      shape: "round",
+      highlight: 60,
+      textOutline: 0,
+      textShadow: false,
     },
   },
   {
@@ -74,6 +121,10 @@ export const presets: Preset[] = [
       shadow: 40,
       glow: 0,
       gradient: true,
+      shape: "round",
+      highlight: 55,
+      textOutline: 0,
+      textShadow: false,
     },
   },
   {
@@ -84,12 +135,16 @@ export const presets: Preset[] = [
       fillEnd: "#7c3aed",
       border: "#ddd6fe",
       textColor: "#ffffff",
-      surface: "raised",
-      depth: 7,
+      surface: "glossy",
+      depth: 6,
       radius: 28,
       shadow: 40,
       glow: 0,
       gradient: true,
+      shape: "round",
+      highlight: 70,
+      textOutline: 0,
+      textShadow: true,
     },
   },
   {
@@ -106,6 +161,10 @@ export const presets: Preset[] = [
       shadow: 30,
       glow: 0,
       gradient: true,
+      shape: "round",
+      highlight: 60,
+      textOutline: 0,
+      textShadow: false,
     },
   },
   {
@@ -118,10 +177,14 @@ export const presets: Preset[] = [
       textColor: "#a5f3fc",
       surface: "flat",
       depth: 0,
-      radius: 8,
+      radius: 10,
       shadow: 0,
       glow: 18,
       gradient: true,
+      shape: "cut",
+      highlight: 0,
+      textOutline: 0,
+      textShadow: false,
     },
   },
   {
@@ -138,6 +201,114 @@ export const presets: Preset[] = [
       shadow: 20,
       glow: 0,
       gradient: false,
+      shape: "round",
+      highlight: 0,
+      textOutline: 0,
+      textShadow: false,
+    },
+  },
+  {
+    name: "Gold",
+    label: "Glossy · premium",
+    values: {
+      fill: "#fde68a",
+      fillEnd: "#d97706",
+      border: "#fff3c4",
+      textColor: "#422006",
+      surface: "glossy",
+      depth: 5,
+      radius: 14,
+      shadow: 35,
+      glow: 0,
+      gradient: true,
+      shape: "round",
+      highlight: 75,
+      textOutline: 0,
+      textShadow: true,
+    },
+  },
+  {
+    name: "Frost",
+    label: "Soft · icy",
+    values: {
+      fill: "#e0f2fe",
+      fillEnd: "#7dd3fc",
+      border: "#ffffff",
+      textColor: "#0c4a6e",
+      surface: "soft",
+      depth: 6,
+      radius: 20,
+      shadow: 25,
+      glow: 0,
+      gradient: true,
+      shape: "round",
+      highlight: 60,
+      textOutline: 0,
+      textShadow: false,
+    },
+  },
+  {
+    name: "Steel",
+    label: "Bevel · industrial",
+    values: {
+      fill: "#b4bcc8",
+      fillEnd: "#4b5563",
+      border: "#e5e7eb",
+      textColor: "#f9fafb",
+      surface: "bevel",
+      depth: 5,
+      radius: 10,
+      shadow: 45,
+      glow: 0,
+      gradient: true,
+      shape: "cut",
+      highlight: 70,
+      textOutline: 0,
+      textShadow: true,
+    },
+  },
+  {
+    name: "Berry",
+    label: "Glossy · sweet",
+    values: {
+      fill: "#f9a8d4",
+      fillEnd: "#be185d",
+      border: "#fce7f3",
+      textColor: "#ffffff",
+      surface: "glossy",
+      depth: 6,
+      radius: 24,
+      shadow: 35,
+      glow: 0,
+      gradient: true,
+      shape: "round",
+      highlight: 65,
+      textOutline: 1.5,
+      textOutlineColor: "#831843",
+      textShadow: false,
+    },
+  },
+  {
+    name: "Retro",
+    label: "Flat · chunky",
+    values: {
+      fill: "#facc15",
+      fillEnd: "#facc15",
+      border: "#1f2937",
+      borderWidth: 4,
+      textColor: "#1f2937",
+      surface: "flat",
+      depth: 0,
+      radius: 6,
+      shadow: 60,
+      shadowBlur: 0,
+      shadowOffset: 5,
+      glow: 0,
+      gradient: false,
+      shape: "cut",
+      highlight: 0,
+      textOutline: 0,
+      textShadow: false,
     },
   },
 ];
@@ -173,6 +344,12 @@ export const baseDesign: Design = {
   texture: "",
   icon: "play",
   iconData: "",
+  shape: "round",
+  highlight: 60,
+  textOutline: 0,
+  textOutlineColor: "#000000",
+  textShadow: false,
+  progress: 68,
   themeId: "Arcade",
 };
 export const defaultAssets: Design[] = [
@@ -250,6 +427,73 @@ export async function loadImages(d: Design) {
     ),
   );
 }
+function iconPath(ctx: CanvasRenderingContext2D, icon: string, s: number) {
+  // Builds an icon path centred on the origin and says how to paint it.
+  ctx.beginPath();
+  switch (icon) {
+    case "play":
+      ctx.moveTo(-s * 0.3, -s * 0.4);
+      ctx.lineTo(s * 0.4, 0);
+      ctx.lineTo(-s * 0.3, s * 0.4);
+      ctx.closePath();
+      return "fill";
+    case "pause":
+      ctx.rect(-s * 0.38, -s * 0.4, s * 0.26, s * 0.8);
+      ctx.rect(s * 0.12, -s * 0.4, s * 0.26, s * 0.8);
+      return "fill";
+    case "plus":
+      ctx.moveTo(-s * 0.4, 0);
+      ctx.lineTo(s * 0.4, 0);
+      ctx.moveTo(0, -s * 0.4);
+      ctx.lineTo(0, s * 0.4);
+      return "stroke";
+    case "star":
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + (i * Math.PI) / 5,
+          r = s * (i % 2 ? 0.22 : 0.48);
+        if (i) ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        else ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.closePath();
+      return "fill";
+    case "heart":
+      ctx.moveTo(0, s * 0.42);
+      ctx.bezierCurveTo(-s * 0.9, -s * 0.2, -s * 0.3, -s * 0.75, 0, -s * 0.25);
+      ctx.bezierCurveTo(s * 0.3, -s * 0.75, s * 0.9, -s * 0.2, 0, s * 0.42);
+      ctx.closePath();
+      return "fill";
+    case "check":
+      ctx.moveTo(-s * 0.4, s * 0.02);
+      ctx.lineTo(-s * 0.12, s * 0.32);
+      ctx.lineTo(s * 0.42, -s * 0.3);
+      return "stroke";
+    case "close":
+      ctx.moveTo(-s * 0.33, -s * 0.33);
+      ctx.lineTo(s * 0.33, s * 0.33);
+      ctx.moveTo(s * 0.33, -s * 0.33);
+      ctx.lineTo(-s * 0.33, s * 0.33);
+      return "stroke";
+    case "arrow":
+      ctx.moveTo(-s * 0.42, 0);
+      ctx.lineTo(s * 0.38, 0);
+      ctx.moveTo(s * 0.08, -s * 0.3);
+      ctx.lineTo(s * 0.4, 0);
+      ctx.lineTo(s * 0.08, s * 0.3);
+      return "stroke";
+    case "gear":
+      for (let i = 0; i < 32; i++) {
+        const a = (i * Math.PI) / 16 - Math.PI / 32,
+          r = s * (i % 4 < 2 ? 0.48 : 0.36);
+        if (i) ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        else ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.closePath();
+      ctx.moveTo(s * 0.16, 0);
+      ctx.arc(0, 0, s * 0.16, 0, Math.PI * 2);
+      return "evenodd";
+  }
+  return "fill";
+}
 export function drawDesign(
   ctx: CanvasRenderingContext2D,
   d: Design,
@@ -260,24 +504,122 @@ export function drawDesign(
     w = d.width,
     h = d.height,
     pressed = state === "pressed",
-    offset = pressed ? d.depth : 0;
+    offset = pressed ? d.depth : 0,
+    k = clamp(d.highlight ?? 60, 0, 100) / 100,
+    // Canvas shadows ignore the transform, so blur and offsets are scaled by hand.
+    unit = Math.abs(ctx.getTransform().a) || 1;
   const corners = d.independentCorners
     ? d.corners
     : [d.radius, d.radius, d.radius, d.radius];
   const path = (y = 0, inset = 0, append = false) => {
     if (!append) ctx.beginPath();
+    const x0 = p + inset,
+      y0 = p + y + inset,
+      iw = w - inset * 2,
+      ih = h - inset * 2;
+    if (iw <= 0 || ih <= 0) return;
+    if (d.shape === "cut") {
+      // Offsetting a 45° chamfer inward shortens each leg by (2 - √2) per unit.
+      const [tl, tr, br, bl] = corners.map((r) =>
+        clamp(r - inset * (2 - Math.SQRT2), 0, Math.min(iw, ih) / 2),
+      );
+      ctx.moveTo(x0 + tl, y0);
+      ctx.lineTo(x0 + iw - tr, y0);
+      ctx.lineTo(x0 + iw, y0 + tr);
+      ctx.lineTo(x0 + iw, y0 + ih - br);
+      ctx.lineTo(x0 + iw - br, y0 + ih);
+      ctx.lineTo(x0 + bl, y0 + ih);
+      ctx.lineTo(x0, y0 + ih - bl);
+      ctx.lineTo(x0, y0 + tl);
+      ctx.closePath();
+    } else
+      ctx.roundRect(
+        x0,
+        y0,
+        iw,
+        ih,
+        corners.map((r) => Math.max(0, Math.min(r - inset, ih / 2, iw / 2))),
+      );
+  };
+  const body = () => path(offset);
+  // Inner shadow: clip to the body and cast a shadow from everything outside it.
+  const innerShade = (color: string, blur: number, dx: number, dy: number) => {
+    ctx.save();
+    body();
+    ctx.clip();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blur * unit;
+    ctx.shadowOffsetX = dx * unit;
+    ctx.shadowOffsetY = dy * unit;
+    ctx.beginPath();
+    ctx.rect(-w - 200, -h - 200, w * 3 + p * 2 + 400, h * 3 + p * 2 + d.depth + 400);
+    path(offset, 0, true);
+    ctx.fillStyle = "#000";
+    ctx.fill("evenodd");
+    ctx.restore();
+  };
+  // Four bevel faces lit from the top left, clipped to a ring inside the edge.
+  const faces = (width: number, strength: number, inverted: boolean) => {
+    const b = Math.min(width, Math.min(w, h) / 2 - 1);
+    if (b <= 0 || strength <= 0) return;
+    ctx.save();
+    body();
+    ctx.clip();
+    path(offset, 0);
+    path(offset, b, true);
+    ctx.clip("evenodd");
+    const x0 = p,
+      y0 = p + offset,
+      x1 = p + w,
+      y1 = p + offset + h;
+    const light = (a: number) => `rgba(255,255,255,${a})`,
+      dark = (a: number) => `rgba(0,0,0,${a})`;
+    const face = (pts: number[][], color: string) => {
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    };
+    face(
+      [[x0, y0], [x1, y0], [x1 - b, y0 + b], [x0 + b, y0 + b]],
+      inverted ? dark(strength) : light(strength),
+    );
+    face(
+      [[x1, y0], [x1, y1], [x1 - b, y1 - b], [x1 - b, y0 + b]],
+      inverted ? light(strength * 0.4) : dark(strength * 0.45),
+    );
+    face(
+      [[x1, y1], [x0, y1], [x0 + b, y1 - b], [x1 - b, y1 - b]],
+      inverted ? light(strength * 0.7) : dark(strength * 0.8),
+    );
+    face(
+      [[x0, y1], [x0, y0], [x0 + b, y0 + b], [x0 + b, y1 - b]],
+      inverted ? dark(strength * 0.55) : light(strength * 0.55),
+    );
+    ctx.restore();
+  };
+  // Glass sheen across the top half.
+  const gloss = (strength: number) => {
+    const gh = h * 0.5,
+      inset = 2;
+    ctx.save();
+    body();
+    ctx.clip();
+    const g = ctx.createLinearGradient(0, p + offset + inset, 0, p + offset + gh);
+    g.addColorStop(0, `rgba(255,255,255,${0.6 * strength})`);
+    g.addColorStop(1, `rgba(255,255,255,${0.06 * strength})`);
+    ctx.beginPath();
     ctx.roundRect(
       p + inset,
-      p + y + inset,
+      p + offset + inset,
       w - inset * 2,
-      h - inset * 2,
-      corners.map((r) =>
-        Math.max(
-          0,
-          Math.min(r - inset, (h - inset * 2) / 2, (w - inset * 2) / 2),
-        ),
-      ),
+      gh - inset,
+      corners.map((r) => Math.max(0, Math.min(r - inset, gh / 2))),
     );
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.restore();
   };
   ctx.save();
   ctx.globalAlpha = state === "disabled" ? 0.42 : 1;
@@ -285,8 +627,8 @@ export function drawDesign(
   if (d.shadow > 0) {
     ctx.save();
     ctx.shadowColor = `rgba(0,0,0,${d.shadow / 100})`;
-    ctx.shadowBlur = d.shadowBlur * Math.abs(ctx.getTransform().a);
-    ctx.shadowOffsetY = d.shadowOffset * Math.abs(ctx.getTransform().a);
+    ctx.shadowBlur = d.shadowBlur * unit;
+    ctx.shadowOffsetY = d.shadowOffset * unit;
     path(offset);
     ctx.fillStyle = d.fill;
     ctx.fill();
@@ -295,7 +637,7 @@ export function drawDesign(
   if (d.glow > 0) {
     ctx.save();
     ctx.shadowColor = d.border;
-    ctx.shadowBlur = d.glow * Math.abs(ctx.getTransform().a);
+    ctx.shadowBlur = d.glow * unit;
     path(offset);
     ctx.fillStyle = d.fill;
     ctx.fill();
@@ -334,20 +676,73 @@ export function drawDesign(
     ctx.drawImage(images.get(d.texture)!, p, p + offset, w, h);
     ctx.restore();
   }
-  if (d.surface === "embossed" || d.surface === "engraved" || raised) {
+  // Windows get a darker title band with a hairline in the border colour.
+  const band =
+    d.kind === "window"
+      ? Math.min(h * 0.45, Math.max(28, d.fontSize * 2.2))
+      : 0;
+  if (band) {
     ctx.save();
-    path(offset);
+    body();
     ctx.clip();
-    const edge = ctx.createLinearGradient(0, p + offset, 0, p + offset + h),
-      engraved = d.surface === "engraved" || pressed;
-    edge.addColorStop(0, engraved ? "rgba(0,0,0,.5)" : "rgba(255,255,255,.65)");
-    edge.addColorStop(0.46, "rgba(255,255,255,0)");
-    edge.addColorStop(1, engraved ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.4)");
-    ctx.strokeStyle = edge;
-    ctx.lineWidth = Math.max(1, d.depth) * 2;
-    path(offset);
-    ctx.stroke();
+    ctx.fillStyle = "rgba(0,0,0,.26)";
+    ctx.fillRect(p, p + offset, w, band);
+    ctx.globalAlpha *= 0.6;
+    ctx.fillStyle = d.border;
+    ctx.fillRect(p, p + offset + band - 1, w, 1);
     ctx.restore();
+  }
+  const depthPx = Math.max(1, d.depth);
+  switch (pressed && d.surface !== "flat" ? "engraved" : d.surface) {
+    case "raised":
+      faces(Math.max(1.5, d.depth * 0.45), 0.55 * k, false);
+      break;
+    case "bevel":
+      faces(Math.max(3, d.depth * 1.1), 0.62 * k, false);
+      break;
+    case "embossed":
+      faces(Math.max(1.5, d.depth * 0.6), 0.4 * k, false);
+      innerShade(
+        `rgba(255,255,255,${0.35 * k})`,
+        depthPx * 1.5 + 2,
+        depthPx * 0.5,
+        depthPx * 0.5,
+      );
+      innerShade(
+        `rgba(0,0,0,${0.35 * k})`,
+        depthPx * 1.5 + 2,
+        -depthPx * 0.5,
+        -depthPx * 0.5,
+      );
+      break;
+    case "engraved":
+      faces(Math.max(1.5, d.depth * 0.5), 0.45 * k, true);
+      innerShade(
+        `rgba(0,0,0,${0.5 * k})`,
+        depthPx * 2 + 3,
+        depthPx * 0.4,
+        depthPx * 0.7 + 1,
+      );
+      break;
+    case "soft":
+      innerShade(
+        `rgba(255,255,255,${0.4 * k})`,
+        depthPx * 3 + 8,
+        depthPx * 0.6 + 1,
+        depthPx * 0.6 + 1,
+      );
+      innerShade(
+        `rgba(0,0,0,${0.35 * k})`,
+        depthPx * 3 + 8,
+        -(depthPx * 0.6 + 1),
+        -(depthPx * 0.6 + 1),
+      );
+      break;
+    case "glossy":
+      gloss(k);
+      faces(1.5, 0.35 * k, false);
+      innerShade(`rgba(0,0,0,${0.3 * k})`, depthPx * 2 + 4, 0, -2);
+      break;
   }
   if (d.borderWidth) {
     const outset = borderOutset(d),
@@ -372,9 +767,14 @@ export function drawDesign(
     ctx.save();
     path(offset, 6);
     ctx.clip();
-    ctx.fillStyle = d.border;
-    ctx.globalAlpha *= 0.65;
-    ctx.fillRect(p + 6, p + 6 + offset, (w - 12) * 0.68, h - 12);
+    ctx.fillStyle = d.accent ?? d.border;
+    if (!d.accent) ctx.globalAlpha *= 0.65;
+    ctx.fillRect(
+      p + 6,
+      p + 6 + offset,
+      ((w - 12) * clamp(d.progress ?? 68, 0, 100)) / 100,
+      h - 12,
+    );
     ctx.restore();
   }
   const text = withText ? d.text : "",
@@ -382,64 +782,72 @@ export function drawDesign(
   ctx.font = `${d.bold ? "700" : "400"} ${d.fontSize}px ${d.font}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = d.textColor;
   const textW = text ? Math.min(ctx.measureText(text).width, w - 40) : 0,
     iconSize = icon ? d.fontSize : 0,
     gap = text && icon ? 12 : 0,
-    total = textW + iconSize + gap;
+    total = textW + iconSize + gap,
+    cy = band ? p + offset + band / 2 : p + h / 2 + offset;
+  const shadowOn = () => {
+    if (!d.textShadow) return;
+    ctx.shadowColor = "rgba(0,0,0,.55)";
+    ctx.shadowBlur = 3 * unit;
+    ctx.shadowOffsetY = 2 * unit;
+  };
+  const shadowOff = () => {
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+  };
   if (icon) {
-    const x = p + w / 2 - total / 2 + iconSize / 2,
-      y = p + h / 2 + offset;
     ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = d.textColor;
-    ctx.strokeStyle = d.textColor;
-    ctx.lineWidth = 2;
-    if (icon === "image" && images.has(d.iconData))
-      ctx.drawImage(
-        images.get(d.iconData)!,
-        -iconSize / 2,
-        -iconSize / 2,
-        iconSize,
-        iconSize,
-      );
-    if (icon === "play") {
-      ctx.beginPath();
-      ctx.moveTo(-iconSize * 0.3, -iconSize * 0.4);
-      ctx.lineTo(iconSize * 0.4, 0);
-      ctx.lineTo(-iconSize * 0.3, iconSize * 0.4);
-      ctx.closePath();
-      ctx.fill();
-    }
-    if (icon === "plus") {
-      ctx.beginPath();
-      ctx.moveTo(-iconSize * 0.4, 0);
-      ctx.lineTo(iconSize * 0.4, 0);
-      ctx.moveTo(0, -iconSize * 0.4);
-      ctx.lineTo(0, iconSize * 0.4);
-      ctx.stroke();
-    }
-    if (icon === "star") {
-      ctx.beginPath();
-      for (let i = 0; i < 10; i++) {
-        const a = -Math.PI / 2 + (i * Math.PI) / 5,
-          r = iconSize * (i % 2 ? 0.22 : 0.48);
-        i
-          ? ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r)
-          : ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    ctx.translate(p + w / 2 - total / 2 + iconSize / 2, cy);
+    shadowOn();
+    if (icon === "image") {
+      if (images.has(d.iconData))
+        ctx.drawImage(
+          images.get(d.iconData)!,
+          -iconSize / 2,
+          -iconSize / 2,
+          iconSize,
+          iconSize,
+        );
+    } else {
+      const mode = iconPath(ctx, icon, iconSize),
+        stroke = mode === "stroke" ? iconSize * 0.16 : 0;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (d.textOutline > 0) {
+        ctx.strokeStyle = d.textOutlineColor;
+        ctx.lineWidth = stroke + d.textOutline * 2;
+        ctx.stroke();
+        shadowOff();
       }
-      ctx.closePath();
-      ctx.fill();
+      ctx.fillStyle = d.textColor;
+      ctx.strokeStyle = d.textColor;
+      if (mode === "stroke") {
+        ctx.lineWidth = stroke;
+        ctx.stroke();
+      } else ctx.fill(mode === "evenodd" ? "evenodd" : "nonzero");
     }
     ctx.restore();
   }
-  if (text)
-    ctx.fillText(
-      text,
-      p + w / 2 + (iconSize + gap) / 2,
-      p + h / 2 + offset + 1,
-      Math.max(1, w - 40 - iconSize - gap),
-    );
+  if (text) {
+    const tx = p + w / 2 + (iconSize + gap) / 2,
+      ty = cy + 1,
+      maxWidth = Math.max(1, w - 40 - iconSize - gap);
+    ctx.save();
+    shadowOn();
+    if (d.textOutline > 0) {
+      ctx.lineJoin = "round";
+      ctx.lineWidth = d.textOutline * 2;
+      ctx.strokeStyle = d.textOutlineColor;
+      ctx.strokeText(text, tx, ty, maxWidth);
+      shadowOff();
+    }
+    ctx.fillStyle = d.textColor;
+    ctx.fillText(text, tx, ty, maxWidth);
+    ctx.restore();
+  }
   ctx.restore();
 }
 export function renderDesign(

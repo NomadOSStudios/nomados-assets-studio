@@ -2,7 +2,14 @@
 import { Upload, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Range, Color, Choice, NumberField } from "./studio-controls";
-import type { BorderPosition, Design, Surface } from "@/lib/studio";
+import {
+  iconNames,
+  surfaces,
+  type BorderPosition,
+  type Design,
+  type Shape,
+  type Surface,
+} from "@/lib/studio";
 export function DesignInspector({
   design: d,
   patch,
@@ -81,6 +88,18 @@ export function DesignInspector({
             onChange={(radius) => patch({ radius })}
           />
         )}
+        <div className="mt-4">
+          <div className="field-label">Corner style</div>
+          <Choice
+            label="Corner style"
+            value={d.shape}
+            options={[
+              { value: "round", label: "Rounded" },
+              { value: "cut", label: "Cut · chamfered" },
+            ]}
+            onChange={(v) => patch({ shape: v as Shape })}
+          />
+        </div>
       </section>
       <section className="property-section">
         <div className="section-heading">
@@ -185,12 +204,18 @@ export function DesignInspector({
         <Choice
           label="Surface style"
           value={d.surface}
-          options={["raised", "flat", "embossed", "engraved"].map((v) => ({
-            value: v,
-            label: v[0].toUpperCase() + v.slice(1),
-          }))}
+          options={surfaces}
           onChange={(v) => patch({ surface: v as Surface })}
         />
+        {d.surface !== "flat" && (
+          <Range
+            label="Highlight"
+            value={d.highlight}
+            max={100}
+            suffix="%"
+            onChange={(highlight) => patch({ highlight })}
+          />
+        )}
         <Range
           label="Depth"
           value={d.depth}
@@ -223,6 +248,28 @@ export function DesignInspector({
           onChange={(glow) => patch({ glow })}
         />
       </section>
+      {d.kind === "bar" && (
+        <section className="property-section">
+          <h3>Progress fill</h3>
+          <Range
+            label="Fill amount"
+            value={d.progress}
+            max={100}
+            suffix="%"
+            onChange={(progress) => patch({ progress })}
+          />
+          <div className="field-label mt-4">Fill color</div>
+          <Color
+            label="Fill color"
+            value={d.accent ?? d.border}
+            onChange={(accent) => patch({ accent })}
+          />
+          <p className="help-text">
+            Export a 0% and a 100% bar, or mask the fill in Unity, for a bar
+            that moves in game.
+          </p>
+        </section>
+      )}
       <section className="property-section">
         <div className="section-heading">
           <h3>Text & icon</h3>
@@ -239,7 +286,7 @@ export function DesignInspector({
           <input
             className="text-input no-margin"
             aria-label="Label text"
-            placeholder="Label text"
+            placeholder={d.kind === "window" ? "Window title" : "Label text"}
             value={d.text}
             maxLength={120}
             onChange={(e) => patch({ text: e.target.value })}
@@ -278,6 +325,31 @@ export function DesignInspector({
             value={d.textColor}
             onChange={(textColor) => patch({ textColor })}
           />
+          <Range
+            label="Outline"
+            value={d.textOutline}
+            max={8}
+            step={0.5}
+            onChange={(textOutline) => patch({ textOutline })}
+          />
+          {d.textOutline > 0 && (
+            <div className="mt-3">
+              <div className="field-label">Outline color</div>
+              <Color
+                label="Outline color"
+                value={d.textOutlineColor}
+                onChange={(textOutlineColor) => patch({ textOutlineColor })}
+              />
+            </div>
+          )}
+          <div className="toggle-row">
+            <label htmlFor="text-shadow">Text shadow</label>
+            <Switch
+              id="text-shadow"
+              checked={d.textShadow}
+              onCheckedChange={(textShadow) => patch({ textShadow })}
+            />
+          </div>
         </div>
         {!d.includeText && (
           <p className="help-text">
@@ -290,9 +362,12 @@ export function DesignInspector({
             value={d.icon || "none"}
             options={[
               { value: "none", label: "No icon" },
-              { value: "play", label: "Play" },
-              { value: "plus", label: "Plus" },
-              { value: "star", label: "Star" },
+              ...iconNames
+                .filter((v) => v)
+                .map((v) => ({
+                  value: v,
+                  label: v[0].toUpperCase() + v.slice(1),
+                })),
             ]}
             onChange={(icon) =>
               patch({ icon: icon === "none" ? "" : icon, iconData: "" })

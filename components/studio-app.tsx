@@ -28,6 +28,16 @@ import {
   Pencil,
   FilePlus2,
   X,
+  Tag,
+  AppWindow,
+  AlignHorizontalJustifyStart,
+  AlignHorizontalJustifyCenter,
+  AlignHorizontalJustifyEnd,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  BringToFront,
+  SendToBack,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -90,13 +100,49 @@ const kindIcons = {
   panel: PanelTop,
   slot: Square,
   bar: RectangleHorizontal,
+  badge: Tag,
+  window: AppWindow,
 } as const;
 const kindLabels: Record<AssetKind, string> = {
   button: "Button",
   panel: "Panel",
   slot: "Slot",
   bar: "Bar",
+  badge: "Badge",
+  window: "Window",
 };
+const kindOrder: AssetKind[] = [
+  "button",
+  "panel",
+  "window",
+  "slot",
+  "bar",
+  "badge",
+];
+const kindDefaults: Record<AssetKind, Partial<Design>> = {
+  button: { width: 288, height: 76, text: "PLAY GAME", icon: "play" },
+  panel: { width: 360, height: 240, text: "", icon: "" },
+  slot: { width: 100, height: 100, text: "", icon: "star" },
+  bar: { width: 280, height: 32, text: "", icon: "", radius: 16 },
+  badge: { width: 96, height: 36, text: "NEW", icon: "", radius: 18, fontSize: 14 },
+  window: {
+    width: 440,
+    height: 300,
+    text: "Settings",
+    icon: "",
+    radius: 14,
+    fontSize: 18,
+  },
+};
+const alignments = [
+  ["left", "Align left", AlignHorizontalJustifyStart],
+  ["centerX", "Center horizontally", AlignHorizontalJustifyCenter],
+  ["right", "Align right", AlignHorizontalJustifyEnd],
+  ["top", "Align top", AlignVerticalJustifyStart],
+  ["centerY", "Center vertically", AlignVerticalJustifyCenter],
+  ["bottom", "Align bottom", AlignVerticalJustifyEnd],
+] as const;
+type Alignment = (typeof alignments)[number][0] | "center";
 export default function Studio() {
   const [history, setHistory] = useState<History>({
     past: [],
@@ -372,7 +418,15 @@ export default function Studio() {
                     text: { type: "string" },
                     surface: {
                       type: "string",
-                      enum: ["raised", "flat", "embossed", "engraved"],
+                      enum: [
+                        "raised",
+                        "flat",
+                        "embossed",
+                        "engraved",
+                        "glossy",
+                        "bevel",
+                        "soft",
+                      ],
                     },
                   },
                   additionalProperties: false,
@@ -442,14 +496,7 @@ export default function Studio() {
       return;
     }
     const id = crypto.randomUUID();
-    const defaults =
-      kind === "panel"
-        ? { width: 360, height: 240, text: "", icon: "" }
-        : kind === "slot"
-          ? { width: 100, height: 100, text: "", icon: "star" }
-          : kind === "bar"
-            ? { width: 280, height: 32, text: "", icon: "", radius: 16 }
-            : { width: 288, height: 76, text: "PLAY GAME", icon: "play" };
+    const defaults = { ...baseDesign, ...kindDefaults[kind] };
     change(
       (p) => ({
         ...p,
@@ -507,6 +554,36 @@ export default function Studio() {
     );
     setSelected(assets.find((a) => a.id !== d.id)!.id);
     toast("Asset removed", { action: { label: "Undo", onClick: undo } });
+  }
+  function align(where: Alignment) {
+    const x =
+      where === "left"
+        ? 0
+        : where === "centerX" || where === "center"
+          ? (screen.width - d.width) / 2
+          : where === "right"
+            ? screen.width - d.width
+            : (d.x ?? 0);
+    const y =
+      where === "top"
+        ? 0
+        : where === "centerY" || where === "center"
+          ? (screen.height - d.height) / 2
+          : where === "bottom"
+            ? screen.height - d.height
+            : (d.y ?? 0);
+    patch(fitScreenAsset(d, screen, x, y));
+  }
+  // Swaps the asset with its neighbour in the list, which is the draw order.
+  function reorder(direction: -1 | 1) {
+    change((p) => {
+      const i = p.assets.findIndex((a) => a.id === d.id),
+        j = i + direction;
+      if (i < 0 || j < 0 || j >= p.assets.length) return p;
+      const next = [...p.assets];
+      [next[i], next[j]] = [next[j], next[i]];
+      return { ...p, assets: next };
+    }, false);
   }
   function newProject() {
     change(() => initialProject, false);
@@ -854,7 +931,7 @@ export default function Studio() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                {(["button", "panel", "slot", "bar"] as AssetKind[]).map(
+                {kindOrder.map(
                   (kind) => {
                     const Icon = kindIcons[kind];
                     return (
@@ -1150,7 +1227,7 @@ export default function Studio() {
                   {mode !== "scene" && <span className="toolbar-divider" />}
                   <span>
                     {mode === "scene"
-                      ? "Drag to arrange · Arrow keys nudge · ⌫ deletes · Click empty space for screen settings"
+                      ? "Drag to arrange · ⇧ locks an axis · ⌥ skips snapping · ⌫ deletes · Click empty space for screen settings"
                       : "Preview background"}
                   </span>
                 </div>
@@ -1270,21 +1347,48 @@ export default function Studio() {
                             onChange={(y) => patch({ y })}
                           />
                         </div>
+                        <div className="field-label mt-4">Align to screen</div>
+                        <div className="align-row">
+                          {alignments.map(([where, label, Icon]) => (
+                            <button
+                              key={where}
+                              className="icon-button"
+                              title={label}
+                              aria-label={label}
+                              onClick={() => align(where)}
+                            >
+                              <Icon size={16} />
+                            </button>
+                          ))}
+                        </div>
                         <button
                           className="secondary-button full mt-3"
-                          onClick={() =>
-                            patch(
-                              fitScreenAsset(
-                                d,
-                                screen,
-                                (screen.width - d.width) / 2,
-                                (screen.height - d.height) / 2,
-                              ),
-                            )
-                          }
+                          onClick={() => align("center")}
                         >
                           Center on screen
                         </button>
+                        <div className="field-label mt-4">Stacking order</div>
+                        <div className="two-fields">
+                          <button
+                            className="secondary-button"
+                            title="Send backward"
+                            disabled={assets[0]?.id === d.id}
+                            onClick={() => reorder(-1)}
+                          >
+                            <SendToBack size={15} /> Backward
+                          </button>
+                          <button
+                            className="secondary-button"
+                            title="Bring forward"
+                            disabled={assets[assets.length - 1]?.id === d.id}
+                            onClick={() => reorder(1)}
+                          >
+                            <BringToFront size={15} /> Forward
+                          </button>
+                        </div>
+                        <p className="help-text">
+                          Panels and windows always sit behind other assets.
+                        </p>
                       </section>
                     )}
                     <DesignInspector

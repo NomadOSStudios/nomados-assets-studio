@@ -1,6 +1,6 @@
 # UIM Studio
 
-A personal, browser-based game UI asset designer. Create buttons, panels, slots, progress bars, and animated effects, then export transparent assets for Unity.
+A personal, browser-based game UI asset designer. Create buttons, panels, windows, slots, progress bars, badges, and animated effects, then export transparent assets for Unity.
 
 ## Run locally
 
@@ -21,10 +21,12 @@ npm run build
 ## Features
 
 - Canvas-based editing and PNG export use the same renderer.
-- Editable dimensions, individual corner radii, gradients, borders, embossed/engraved/raised surfaces, shadows, and glows.
+- Editable dimensions, individual corner radii, rounded or chamfered corners, gradients, borders, shadows, and glows.
+- Seven surfaces: flat, raised 3D block, glossy sheen, chiseled bevel, embossed, engraved, and soft neumorphic lighting, each with a highlight strength.
+- Text outline and text shadow, ten built-in icons, and a progress fill amount and colour for bars.
 - Numeric controls support sliders, exact typing, and wheel adjustment while hovering over the value. Scroll up to increase and down to decrease; hold Shift for ten times the step.
 - Border color, thickness, and Inside / Center / Outside placement. Outside borders receive extra PNG padding when needed; existing projects keep their inside borders.
-- Six starting styles, saved custom styles, and explicit updates to assets linked to a saved style. Hover a saved style to delete it; linked assets keep their look.
+- Eleven starting styles, saved custom styles, and explicit updates to assets linked to a saved style. Hover a saved style to delete it; linked assets keep their look.
 - Default, hover, pressed, and disabled state previews.
 - Text, system fonts, built-in icons, uploaded icons, and image textures.
 - Undo/redo, asset creation/duplication/removal, and a draggable screen builder. ⌘D (Ctrl+D on Windows) duplicates the selected asset.
@@ -44,9 +46,9 @@ Use the project menu beside the logo to rename the project, save or open a proje
 
 Open **Screen builder**, then use the **Screen** tab in the right inspector to name the screen, set its width and height, choose a resolution preset, or change the background. Background images support fill/crop, fit inside, and stretch.
 
-Click an asset to drag it or edit its **Asset** properties, including X/Y coordinates and **Center on screen**. Click empty space or press Escape to return to screen settings. Arrow keys move a selected asset by 1 pixel; Shift+Arrow moves it by 10 pixels. Delete or Backspace removes the selected asset, with Undo offered in the toast. Resizing preserves existing asset positions. **Fit** shows the whole screen; percentage zoom enables scrolling for larger screens.
+Click an asset to drag it or edit its **Asset** properties, including X/Y coordinates, six **Align to screen** buttons, **Center on screen**, and **Stacking order**. Dragging snaps to the screen edges and centre and to other assets, with dashed guides; hold Shift to lock the drag to one axis and Option (Alt) to drag freely. Click empty space or press Escape to return to screen settings. Arrow keys move a selected asset by 1 pixel; Shift+Arrow moves it by 10 pixels. Delete or Backspace removes the selected asset, with Undo offered in the toast. Resizing preserves existing asset positions. **Fit** shows the whole screen; percentage zoom enables scrolling for larger screens.
 
-**Export screen** saves a flattened PNG at the chosen dimensions, with no handles or guides. Individual asset export remains available in **Designer**. Existing project files automatically receive the original 960 × 640 screen defaults.
+Panels and windows always draw behind other assets. **Export screen** saves a flattened PNG at the chosen dimensions, with no handles or guides. Individual asset export remains available in **Designer**. Existing project files automatically receive the original 960 × 640 screen defaults.
 
 ## Unity
 
