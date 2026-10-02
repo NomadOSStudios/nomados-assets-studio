@@ -11,9 +11,9 @@ public static class UIMAssetImporter
     [Serializable] private class Body { public float x, y, width, height; }
     [Serializable] private class Entry { public string file; public string name; public string state; public int width, height; public float left, bottom, right, top; public Body body; }
     [Serializable] private class TextInfo { public string kind; public string content; public float fontSize; public string color; public string align; public bool bold; public float lineHeight; public string font; }
-    [Serializable] private class Placement { public string name; public string kind; public string file; public float x, y, width, height; public string group; public TextInfo text; }
+    [Serializable] private class Placement { public string name; public string kind; public string file; public string source; public float x, y, width, height; public string group; public TextInfo text; public TextInfo label; }
     [Serializable] private class Screen { public string name; public float width, height; public Placement[] assets; }
-    [Serializable] private class Manifest { public int version; public float scale; public float pixelsPerUnit; public Entry[] assets; public Screen screen; public Screen[] screens; }
+    [Serializable] private class Manifest { public int version; public float scale; public float pixelsPerUnit; public string compression; public Entry[] assets; public Screen screen; public Screen[] screens; }
 
     [MenuItem("Tools/UIM Studio/Apply sprite settings")]
     public static void ApplySpriteSettings()
@@ -65,8 +65,13 @@ public static class UIMAssetImporter
         // Folders from the asset list become empty parents the size of the
         // screen, so children keep their screen coordinates.
         var folders = new System.Collections.Generic.Dictionary<string, RectTransform>();
+        // Names repeat in a screen (copies); Unity objects get a numbered suffix.
+        var names = new System.Collections.Generic.Dictionary<string, int>();
         foreach (var placement in screen.assets)
         {
+            var objectName = string.IsNullOrEmpty(placement.name) ? "Asset" : placement.name;
+            if (names.TryGetValue(objectName, out var seen)) { names[objectName] = seen + 1; objectName = objectName + " " + (seen + 1); }
+            else names[objectName] = 1;
             var parent = rootRect;
             if (!string.IsNullOrEmpty(placement.group))
             {
@@ -84,7 +89,7 @@ public static class UIMAssetImporter
             // Screen coordinates are top-left, y down, at 1x.
             if (placement.text != null && !string.IsNullOrEmpty(placement.text.kind))
             {
-                var textObject = new GameObject(placement.name, typeof(RectTransform), typeof(CanvasRenderer)) { layer = root.layer };
+                var textObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer)) { layer = root.layer };
                 var textRect = (RectTransform)textObject.transform;
                 textRect.SetParent(parent, false);
                 textRect.anchorMin = textRect.anchorMax = textRect.pivot = new Vector2(0f, 1f);
@@ -97,7 +102,7 @@ public static class UIMAssetImporter
             var entry = Array.Find(manifest.assets, a => a.file == placement.file);
             var sprite = entry != null ? AssetDatabase.LoadAssetAtPath<Sprite>(folder + "/" + entry.file) : null;
             if (!sprite) continue;
-            var go = new GameObject(placement.name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)) { layer = root.layer };
+            var go = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)) { layer = root.layer };
             var rect = (RectTransform)go.transform;
             rect.SetParent(parent, false);
             // The PNG holds padding around the body, so the image sits that much up-left.
@@ -109,7 +114,8 @@ public static class UIMAssetImporter
             var image = go.GetComponent<Image>();
             image.sprite = sprite;
             image.type = sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
-            WireButton(go, image, manifest, folder, placement.name);
+            WireButton(go, image, manifest, folder, string.IsNullOrEmpty(placement.source) ? placement.name : placement.source);
+            if (placement.label != null && !string.IsNullOrEmpty(placement.label.content)) AddLabel(go, rect, entry, scale, placement.label);
             built++;
         }
         var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + Safe(screen.name) + ".prefab");
@@ -122,6 +128,24 @@ public static class UIMAssetImporter
     /// <summary>Editable text for a title or paragraph. Uses TextMeshPro
     /// through reflection when the package is installed, so this file compiles
     /// either way, and falls back to the built-in UI Text.</summary>
+    /// <summary>A child text object over the asset's body (inside the PNG's
+    /// padding) for words exported as text rather than baked.</summary>
+    static void AddLabel(GameObject owner, RectTransform rect, Entry entry, float scale, TextInfo info)
+    {
+        var label = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer)) { layer = owner.layer };
+        var lrt = (RectTransform)label.transform;
+        lrt.SetParent(rect, false);
+        lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
+        var bodyX = entry.body != null ? entry.body.x / scale : 0f;
+        var bodyY = entry.body != null ? entry.body.y / scale : 0f;
+        var bodyW = entry.body != null ? entry.body.width / scale : rect.sizeDelta.x;
+        var bodyH = entry.body != null ? entry.body.height / scale : rect.sizeDelta.y;
+        var inset = Mathf.Min(bodyW, bodyH) * .1f;
+        lrt.offsetMin = new Vector2(bodyX + inset, rect.sizeDelta.y - bodyY - bodyH + inset);
+        lrt.offsetMax = new Vector2(-(rect.sizeDelta.x - bodyX - bodyW) - inset, -(bodyY + inset));
+        AddText(label, info);
+    }
+
     static void AddText(GameObject go, TextInfo info)
     {
         Color color;
@@ -133,6 +157,8 @@ public static class UIMAssetImporter
         {
             var tmp = go.AddComponent(tmpType);
             Set(tmp, "text", info.content ?? "");
+            var fontAsset = FindFontAsset(info.font);
+            if (fontAsset != null) Set(tmp, "font", fontAsset);
             Set(tmp, "fontSize", info.fontSize > 0f ? info.fontSize : 24f);
             Set(tmp, "color", color);
             var styleProperty = tmpType.GetProperty("fontStyle");
@@ -159,6 +185,24 @@ public static class UIMAssetImporter
             : (horizontal == "Left" ? TextAnchor.MiddleLeft : horizontal == "Right" ? TextAnchor.MiddleRight : TextAnchor.MiddleCenter);
         try { text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
         catch { try { text.font = Resources.GetBuiltinResource<Font>("Arial.ttf"); } catch { } }
+    }
+
+    /// <summary>The project's TextMeshPro font asset whose name starts with the
+    /// design's font family ("Alexandria" finds "Alexandria SDF"), else none.</summary>
+    static UnityEngine.Object FindFontAsset(string family)
+    {
+        if (string.IsNullOrEmpty(family)) return null;
+        var fontType = Type.GetType("TMPro.TMP_FontAsset, Unity.TextMeshPro");
+        if (fontType == null) return null;
+        var first = family.Split(',')[0].Trim().Trim('"', '\'');
+        if (first.Length == 0) return null;
+        foreach (var guid in AssetDatabase.FindAssets("t:TMP_FontAsset " + first.Split(' ')[0]))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var name = System.IO.Path.GetFileNameWithoutExtension(path);
+            if (name.StartsWith(first, StringComparison.OrdinalIgnoreCase)) return AssetDatabase.LoadAssetAtPath(path, fontType);
+        }
+        return null;
     }
 
     static void Set(object target, string property, object value)
@@ -212,7 +256,7 @@ public static class UIMAssetImporter
             importer.spritePixelsPerUnit = (manifest.pixelsPerUnit > 0f ? manifest.pixelsPerUnit : 100f) * (manifest.scale > 0f ? manifest.scale : 1f);
             importer.alphaIsTransparency = true;
             importer.mipmapEnabled = false;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.textureCompression = manifest.compression == "none" ? TextureImporterCompression.Uncompressed : TextureImporterCompression.Compressed;
             importer.maxTextureSize = Mathf.Min(8192, Mathf.NextPowerOfTwo(Mathf.Max(asset.width, asset.height)));
             var settings = new TextureImporterSettings();
             importer.ReadTextureSettings(settings);

@@ -15,7 +15,10 @@ import {
 export type ExportSettings = {
   scope: "png" | "states" | "kit";
   scale: number;
+  /** Bake text into the images. Off: words arrive as Unity text objects. */
   content: boolean;
+  states: "all" | "phone" | "default";
+  compression: "normal" | "none";
 };
 // Draws a rendered asset stretched to a new size the way Unity's Sliced
 // image does: corners stay fixed, edges stretch one way, the middle both.
@@ -155,8 +158,37 @@ export function ExportOptions({
             ` · ${stateLabel} state, chosen under the canvas`}
         </span>
       </div>
+      {s.scope !== "png" && (
+        <>
+          <label className="field-label mt-5">Button states</label>
+          <Choice
+            label="Button states"
+            value={s.states}
+            options={[
+              { value: "all", label: "All four states" },
+              { value: "phone", label: "Phone · no hover" },
+              { value: "default", label: "Default state only" },
+            ]}
+            onChange={(v) =>
+              onChange({ states: v as ExportSettings["states"] })
+            }
+          />
+          <label className="field-label mt-5">Unity texture import</label>
+          <Choice
+            label="Unity texture import"
+            value={s.compression}
+            options={[
+              { value: "normal", label: "Compressed · platform default" },
+              { value: "none", label: "Uncompressed" },
+            ]}
+            onChange={(v) =>
+              onChange({ compression: v as ExportSettings["compression"] })
+            }
+          />
+        </>
+      )}
       <div className="toggle-row">
-        <label htmlFor={id + "content"}>Include text & icons</label>
+        <label htmlFor={id + "content"}>Bake text into images</label>
         <Switch
           id={id + "content"}
           checked={s.content}

@@ -342,10 +342,21 @@ export default function Studio() {
     [fontTick, setFontTick] = useState(0);
   const [exportOpen, setExportOpen] = useState(false),
     [busy, setBusy] = useState(false),
-    [exportSettings, setExportSettings] = useState<ExportSettings>({
-      scope: "png",
-      scale: 1,
-      content: true,
+    [exportSettings, setExportSettings] = useState<ExportSettings>(() => {
+      const defaults: ExportSettings = {
+        scope: "png",
+        scale: 1,
+        content: true,
+        states: "all",
+        compression: "normal",
+      };
+      // The dialog remembers its last settings on this device.
+      try {
+        const saved = localStorage.getItem("uim-pref-export");
+        return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
+      } catch {
+        return defaults;
+      }
     }),
     [guides, setGuides] = useState(false);
   const [effectFormat, setEffectFormat] = useState<EffectFormat>("sheet"),
@@ -1383,9 +1394,7 @@ export default function Studio() {
       await document.fonts.ready;
       const s = exportSettings;
       if (s.scope === "png") {
-        const design = s.content
-          ? d
-          : { ...d, text: "", icon: "", iconData: "" };
+        const design = s.content ? d : { ...d, text: "" };
         await loadImages(design);
         download(
           await canvasBlob(
@@ -1399,6 +1408,13 @@ export default function Studio() {
           `${slug(d.name)}-${state}@${s.scale}x.png`,
         );
       } else {
+        const exportScreens = s.scope === "kit" ? screensForExport() : [];
+        const stamp = new Date()
+          .toISOString()
+          .slice(0, 16)
+          .replace(/[-:T]/g, "")
+          .replace(/(\d{8})(\d{4})/, "$1-$2");
+        const screenName = exportScreens[0]?.settings.name;
         download(
           await exportAssets(
             s.scope === "kit" ? assets : [d],
@@ -1406,9 +1422,13 @@ export default function Studio() {
             true,
             state,
             s.content,
-            s.scope === "kit" ? screensForExport() : [],
+            exportScreens,
+            project.groups,
+            { states: s.states, compression: s.compression },
           ),
-          `${slug(s.scope === "kit" ? project.name : d.name)}.zip`,
+          s.scope === "kit"
+            ? `${slug(project.name)}${screenName ? "-" + slug(screenName) : ""}-${stamp}.zip`
+            : `${slug(d.name)}-states-${stamp}.zip`,
         );
       }
       toast.success("Export downloaded");
@@ -1540,7 +1560,15 @@ export default function Studio() {
     state,
     settings: exportSettings,
     onChange: (v: Partial<ExportSettings>) =>
-      setExportSettings((s) => ({ ...s, ...v })),
+      setExportSettings((s) => {
+        const next = { ...s, ...v };
+        try {
+          localStorage.setItem("uim-pref-export", JSON.stringify(next));
+        } catch {
+          // Storage may be unavailable; the dialog just forgets.
+        }
+        return next;
+      }),
     busy,
     onExport: runExport,
     guides,
