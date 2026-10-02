@@ -53,3 +53,6 @@ icons.png
 # Extra icon sources; the app uses public/icons
 output/
 game-icons-new.zip
+
+# Scratch project files staged for the browser pane
+/public/_*.uim.json
