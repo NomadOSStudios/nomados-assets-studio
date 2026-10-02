@@ -56,6 +56,10 @@ import {
   LockOpen,
   Image,
   SquareDashed,
+  Folder,
+  FolderPlus,
+  FolderMinus,
+  ChevronRight,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -113,6 +117,7 @@ import {
   parseProject,
   styleValues,
   designSchema,
+  type AssetGroup,
   type Project,
 } from "@/lib/project";
 import { exportAssets, exportEffect } from "@/lib/exports";
@@ -360,7 +365,7 @@ export default function Studio() {
     lastEdit = useRef(0),
     saveRevision = useRef(0),
     clipboard = useRef<Design[]>([]),
-    dragRow = useRef<string | null>(null),
+    dragRow = useRef<{ type: "asset" | "group"; id: string } | null>(null),
     projectRef = useRef(project);
   useEffect(() => {
     projectRef.current = project;
@@ -368,6 +373,21 @@ export default function Studio() {
   const d = assets.find((a) => a.id === selected) || assets[0];
   const placement = screen.placements[d.id];
   const selectedPlaced = placed.filter((a) => selection.includes(a.id));
+  // Folders in the asset list.
+  const groupOf = (a: Design) => project.groups.find((g) => g.id === a.group);
+  const membersOf = (g: AssetGroup) => assets.filter((a) => a.group === g.id);
+  const groupsInSelection = project.groups.filter((g) =>
+    assets.some((a) => a.group === g.id && selection.includes(a.id)),
+  );
+  // The folder whose members are exactly the current selection, if any.
+  const selectedGroup = project.groups.find((g) => {
+    const ids = membersOf(g).map((a) => a.id);
+    return (
+      ids.length > 0 &&
+      ids.length === selection.length &&
+      ids.every((id) => selection.includes(id))
+    );
+  });
   const change = useCallback((fn: (p: Project) => Project, group = true) => {
     const now = Date.now(),
       separate = !group || now - lastEdit.current > 450;
@@ -608,6 +628,7 @@ export default function Studio() {
           })),
           effect: p.effect,
           activeScreen: p.activeScreen,
+          groups: p.groups,
           screens: p.screens.map(({ image, ...s }) => ({
             ...s,
             hasImage: !!image,
@@ -744,6 +765,7 @@ export default function Studio() {
             kind,
             locked: false,
             hidden: false,
+            group: groupOf(d)?.id,
             x,
             y,
           },
@@ -771,15 +793,33 @@ export default function Studio() {
       return null;
     }
     const map: Record<string, string> = {};
+    // Folders whose every member is selected are copied as new folders.
+    const groupMap: Record<string, string> = {};
+    const newGroups: AssetGroup[] = [];
+    for (const g of project.groups) {
+      const members = membersOf(g);
+      if (members.length && members.every((m) => ids.includes(m.id))) {
+        const id = crypto.randomUUID();
+        groupMap[g.id] = id;
+        newGroups.push({ id, name: `${g.name.slice(0, 50)} copy`, collapsed: g.collapsed });
+      }
+    }
     const copies = sources.map((src) => {
       const id = crypto.randomUUID();
       map[src.id] = id;
-      return { ...src, id, name: `${src.name.slice(0, 70)} copy`, locked: false };
+      return {
+        ...src,
+        id,
+        name: `${src.name.slice(0, 70)} copy`,
+        locked: false,
+        group: src.group ? (groupMap[src.group] ?? src.group) : undefined,
+      };
     });
     change(
       (p) => ({
         ...p,
         assets: [...p.assets, ...copies],
+        groups: [...p.groups, ...newGroups],
         screens: p.screens.map((s) => {
           if (s.id !== p.activeScreen) return s;
           const placements = { ...s.placements };
@@ -810,16 +850,20 @@ export default function Studio() {
       return;
     }
     change(
-      (p) => ({
-        ...p,
-        assets: p.assets.filter((a) => !targets.includes(a.id)),
-        screens: p.screens.map((s) => ({
-          ...s,
-          placements: Object.fromEntries(
-            Object.entries(s.placements).filter(([id]) => !targets.includes(id)),
-          ),
-        })),
-      }),
+      (p) => {
+        const remaining = p.assets.filter((a) => !targets.includes(a.id));
+        return {
+          ...p,
+          assets: remaining,
+          groups: p.groups.filter((g) => remaining.some((a) => a.group === g.id)),
+          screens: p.screens.map((s) => ({
+            ...s,
+            placements: Object.fromEntries(
+              Object.entries(s.placements).filter(([id]) => !targets.includes(id)),
+            ),
+          })),
+        };
+      },
       false,
     );
     if (mode === "scene") select([], null);
@@ -956,7 +1000,8 @@ export default function Studio() {
       return { ...p, assets: next };
     }, false);
   }
-  function reorderTo(fromId: string, toId: string) {
+  // Drops a row onto another: it takes that row's place and its folder.
+  function reorderTo(fromId: string, toId: string, groupId?: string) {
     if (fromId === toId) return;
     change((p) => {
       const from = p.assets.findIndex((a) => a.id === fromId),
@@ -964,9 +1009,101 @@ export default function Studio() {
       if (from < 0 || to < 0) return p;
       const next = [...p.assets];
       const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
+      next.splice(to, 0, { ...item, group: groupId });
       return { ...p, assets: next };
     }, false);
+  }
+  // Moves a whole folder so its members sit just before the target asset.
+  function moveGroupTo(groupId: string, toId: string) {
+    change((p) => {
+      const members = p.assets.filter((a) => a.group === groupId),
+        rest = p.assets.filter((a) => a.group !== groupId),
+        to = rest.findIndex((a) => a.id === toId);
+      if (!members.length || to < 0) return p;
+      return { ...p, assets: [...rest.slice(0, to), ...members, ...rest.slice(to)] };
+    }, false);
+  }
+  function groupSelection() {
+    const ids = assets.filter((a) => selection.includes(a.id)).map((a) => a.id);
+    if (ids.length < 2) {
+      toast.info("Select two or more assets to put them in a folder.");
+      return;
+    }
+    if (project.groups.length >= 50) {
+      toast.error("A project can hold up to 50 folders.");
+      return;
+    }
+    const id = crypto.randomUUID(),
+      name = `Group ${project.groups.length + 1}`;
+    change((p) => {
+      // Members move together to where the first of them sat.
+      const first = p.assets.findIndex((a) => ids.includes(a.id));
+      const members = p.assets
+        .filter((a) => ids.includes(a.id))
+        .map((a) => ({ ...a, group: id }));
+      const rest = p.assets.filter((a) => !ids.includes(a.id));
+      return {
+        ...p,
+        assets: [...rest.slice(0, first), ...members, ...rest.slice(first)],
+        groups: [
+          ...p.groups.filter((g) => rest.some((a) => a.group === g.id)),
+          { id, name, collapsed: false },
+        ],
+      };
+    }, false);
+    toast(`${ids.length} assets grouped as ${name}`, {
+      action: { label: "Undo", onClick: undo },
+    });
+  }
+  function ungroup(groups: AssetGroup[] = groupsInSelection) {
+    if (!groups.length) return;
+    const ids = groups.map((g) => g.id);
+    change(
+      (p) => ({
+        ...p,
+        groups: p.groups.filter((g) => !ids.includes(g.id)),
+        assets: p.assets.map((a) =>
+          a.group && ids.includes(a.group) ? { ...a, group: undefined } : a,
+        ),
+      }),
+      false,
+    );
+    toast(groups.length > 1 ? "Folders removed" : "Folder removed", {
+      action: { label: "Undo", onClick: undo },
+    });
+  }
+  function renameGroup(id: string, name: string) {
+    change((p) => ({
+      ...p,
+      groups: p.groups.map((g) => (g.id === id ? { ...g, name } : g)),
+    }));
+  }
+  function toggleGroup(id: string) {
+    changeQuiet((p) => ({
+      ...p,
+      groups: p.groups.map((g) =>
+        g.id === id ? { ...g, collapsed: !g.collapsed } : g,
+      ),
+    }));
+  }
+  function selectGroup(g: AssetGroup, additive: boolean) {
+    if (mode === "effects") setMode("asset");
+    const ids = membersOf(g).map((a) => a.id);
+    if (!ids.length) return;
+    const next = additive ? [...new Set([...selection, ...ids])] : ids;
+    select(next, ids[0]);
+    if (mode === "scene")
+      for (const a of membersOf(g))
+        if (!screen.placements[a.id] && !a.hidden) placeOnScreen(a.id);
+  }
+  function patchGroup(g: AssetGroup, v: Partial<Design>) {
+    change(
+      (p) => ({
+        ...p,
+        assets: p.assets.map((a) => (a.group === g.id ? { ...a, ...v } : a)),
+      }),
+      false,
+    );
   }
   function placeOnScreen(id: string) {
     const a = assets.find((x) => x.id === id);
@@ -1383,6 +1520,12 @@ export default function Studio() {
         duplicate();
         return;
       }
+      if (meta && k === "g") {
+        e.preventDefault();
+        if (e.shiftKey) ungroup();
+        else groupSelection();
+        return;
+      }
       if (!scene || screenInspector !== "asset") return;
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
@@ -1535,85 +1678,199 @@ export default function Studio() {
             </DropdownMenu>
           </div>
           <div className="asset-list">
-            {assets.map((a) => {
-              const Icon = kindIcons[a.kind];
-              const active =
-                selection.includes(a.id) &&
-                mode !== "effects" &&
-                (mode !== "scene" || screenInspector === "asset");
-              const onScreen = !!screen.placements[a.id];
-              return (
-                <div
-                  key={a.id}
-                  role="button"
-                  tabIndex={0}
-                  className={`asset-row ${active ? "selected" : ""} ${a.hidden ? "is-hidden" : ""} ${mode === "scene" && !onScreen ? "unplaced" : ""} ${dropTarget === a.id ? "drop-target" : ""}`}
-                  title={
-                    mode === "scene" && !onScreen
-                      ? `${a.name} · not on ${screen.name} · click to place`
-                      : `${a.name} · ${a.width} × ${a.height} px · drag to reorder`
-                  }
-                  aria-current={active ? "true" : undefined}
-                  draggable
-                  onDragStart={(e) => {
-                    dragRow.current = a.id;
-                    e.dataTransfer.effectAllowed = "move";
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (dropTarget !== a.id) setDropTarget(a.id);
-                  }}
-                  onDragLeave={() =>
-                    setDropTarget((t) => (t === a.id ? null : t))
-                  }
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (dragRow.current) reorderTo(dragRow.current, a.id);
-                    dragRow.current = null;
-                    setDropTarget(null);
-                  }}
-                  onDragEnd={() => {
-                    dragRow.current = null;
-                    setDropTarget(null);
-                  }}
-                  onClick={(e) => clickRow(a, e.shiftKey)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      clickRow(a, e.shiftKey);
+            {(() => {
+              const renderedGroups = new Set<string>();
+              const assetRow = (a: Design, nested: boolean) => {
+                const Icon = kindIcons[a.kind];
+                const active =
+                  selection.includes(a.id) &&
+                  mode !== "effects" &&
+                  (mode !== "scene" || screenInspector === "asset");
+                const onScreen = !!screen.placements[a.id];
+                return (
+                  <div
+                    key={a.id}
+                    role="button"
+                    tabIndex={0}
+                    className={`asset-row ${nested ? "nested" : ""} ${active ? "selected" : ""} ${a.hidden ? "is-hidden" : ""} ${mode === "scene" && !onScreen ? "unplaced" : ""} ${dropTarget === a.id ? "drop-target" : ""}`}
+                    title={
+                      mode === "scene" && !onScreen
+                        ? `${a.name} · not on ${screen.name} · click to place`
+                        : `${a.name} · ${a.width} × ${a.height} px · drag to reorder`
                     }
-                  }}
-                >
-                  <Icon size={17} />
-                  <span className="asset-name">{a.name}</span>
-                  <span className="row-tools">
+                    aria-current={active ? "true" : undefined}
+                    draggable
+                    onDragStart={(e) => {
+                      dragRow.current = { type: "asset", id: a.id };
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (dropTarget !== a.id) setDropTarget(a.id);
+                    }}
+                    onDragLeave={() =>
+                      setDropTarget((t) => (t === a.id ? null : t))
+                    }
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const from = dragRow.current;
+                      if (from?.type === "asset") reorderTo(from.id, a.id, a.group);
+                      else if (from?.type === "group") moveGroupTo(from.id, a.id);
+                      dragRow.current = null;
+                      setDropTarget(null);
+                    }}
+                    onDragEnd={() => {
+                      dragRow.current = null;
+                      setDropTarget(null);
+                    }}
+                    onClick={(e) => clickRow(a, e.shiftKey)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        clickRow(a, e.shiftKey);
+                      }
+                    }}
+                  >
+                    <Icon size={17} />
+                    <span className="asset-name">{a.name}</span>
+                    <span className="row-tools">
+                      <button
+                        className="icon-button mini"
+                        title={a.hidden ? "Show on screens" : "Hide on screens"}
+                        aria-label={`${a.hidden ? "Show" : "Hide"} ${a.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          patchAsset(a.id, { hidden: !a.hidden });
+                        }}
+                      >
+                        {a.hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
+                      <button
+                        className="icon-button mini"
+                        title={a.locked ? "Unlock position" : "Lock position"}
+                        aria-label={`${a.locked ? "Unlock" : "Lock"} ${a.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          patchAsset(a.id, { locked: !a.locked });
+                        }}
+                      >
+                        {a.locked ? <Lock size={13} /> : <LockOpen size={13} />}
+                      </button>
+                    </span>
+                    <span className="asset-kind">{kindLabels[a.kind]}</span>
+                  </div>
+                );
+              };
+              const groupRow = (g: AssetGroup, members: Design[]) => {
+                const inSelection = members.filter((m) => selection.includes(m.id)).length;
+                const active =
+                  inSelection === members.length &&
+                  mode !== "effects" &&
+                  (mode !== "scene" || screenInspector === "asset");
+                const allHidden = members.every((m) => m.hidden),
+                  allLocked = members.every((m) => m.locked);
+                return (
+                  <div
+                    key={`group-${g.id}`}
+                    role="button"
+                    tabIndex={0}
+                    className={`asset-row group-row ${active ? "selected" : inSelection ? "partial" : ""} ${dropTarget === g.id ? "drop-target" : ""}`}
+                    title={`${g.name} · ${members.length} assets · click to select all`}
+                    aria-current={active ? "true" : undefined}
+                    draggable
+                    onDragStart={(e) => {
+                      dragRow.current = { type: "group", id: g.id };
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (dropTarget !== g.id) setDropTarget(g.id);
+                    }}
+                    onDragLeave={() =>
+                      setDropTarget((t) => (t === g.id ? null : t))
+                    }
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const from = dragRow.current,
+                        first = members[0];
+                      if (from?.type === "asset" && first && from.id !== first.id)
+                        reorderTo(from.id, first.id, g.id);
+                      else if (from?.type === "group" && first && from.id !== g.id)
+                        moveGroupTo(from.id, first.id);
+                      dragRow.current = null;
+                      setDropTarget(null);
+                    }}
+                    onDragEnd={() => {
+                      dragRow.current = null;
+                      setDropTarget(null);
+                    }}
+                    onClick={(e) => selectGroup(g, e.shiftKey)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectGroup(g, e.shiftKey);
+                      }
+                    }}
+                  >
                     <button
-                      className="icon-button mini"
-                      title={a.hidden ? "Show on screens" : "Hide on screens"}
-                      aria-label={`${a.hidden ? "Show" : "Hide"} ${a.name}`}
+                      className="icon-button mini chevron"
+                      title={g.collapsed ? "Expand folder" : "Collapse folder"}
+                      aria-label={`${g.collapsed ? "Expand" : "Collapse"} ${g.name}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        patchAsset(a.id, { hidden: !a.hidden });
+                        toggleGroup(g.id);
                       }}
                     >
-                      {a.hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                      {g.collapsed ? (
+                        <ChevronRight size={13} />
+                      ) : (
+                        <ChevronDown size={13} />
+                      )}
                     </button>
-                    <button
-                      className="icon-button mini"
-                      title={a.locked ? "Unlock position" : "Lock position"}
-                      aria-label={`${a.locked ? "Unlock" : "Lock"} ${a.name}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        patchAsset(a.id, { locked: !a.locked });
-                      }}
-                    >
-                      {a.locked ? <Lock size={13} /> : <LockOpen size={13} />}
-                    </button>
-                  </span>
-                  <span className="asset-kind">{kindLabels[a.kind]}</span>
-                </div>
-              );
-            })}
+                    <Folder size={16} />
+                    <span className="asset-name">{g.name}</span>
+                    <span className="row-tools">
+                      <button
+                        className="icon-button mini"
+                        title={allHidden ? "Show folder" : "Hide folder"}
+                        aria-label={`${allHidden ? "Show" : "Hide"} folder ${g.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          patchGroup(g, { hidden: !allHidden });
+                        }}
+                      >
+                        {allHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
+                      <button
+                        className="icon-button mini"
+                        title={allLocked ? "Unlock folder" : "Lock folder"}
+                        aria-label={`${allLocked ? "Unlock" : "Lock"} folder ${g.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          patchGroup(g, { locked: !allLocked });
+                        }}
+                      >
+                        {allLocked ? <Lock size={13} /> : <LockOpen size={13} />}
+                      </button>
+                    </span>
+                    <span className="asset-kind">{members.length}</span>
+                  </div>
+                );
+              };
+              return assets.map((a) => {
+                const g = groupOf(a);
+                if (!g) return assetRow(a, false);
+                if (renderedGroups.has(g.id)) return null;
+                renderedGroups.add(g.id);
+                const members = membersOf(g);
+                return (
+                  <div key={`folder-${g.id}`} className="asset-group">
+                    {groupRow(g, members)}
+                    {!g.collapsed && members.map((m) => assetRow(m, true))}
+                  </div>
+                );
+              });
+            })()}
           </div>
           <div className="sidebar-section-title">
             <Palette size={15} />
@@ -1754,6 +2011,25 @@ export default function Studio() {
                   )}
                 </div>
                 <div className="toolbar-buttons">
+                  <button
+                    className="icon-button"
+                    aria-label="Group selection"
+                    title="Put the selected assets in a folder (⌘G)"
+                    onClick={groupSelection}
+                    disabled={selection.length < 2 || (mode === "scene" && !sceneSelecting)}
+                  >
+                    <FolderPlus size={16} />
+                  </button>
+                  <button
+                    className="icon-button"
+                    aria-label="Ungroup"
+                    title="Remove the selection's folder (⌘⇧G)"
+                    onClick={() => ungroup()}
+                    disabled={!groupsInSelection.length || (mode === "scene" && !sceneSelecting)}
+                  >
+                    <FolderMinus size={16} />
+                  </button>
+                  <span className="toolbar-divider" />
                   <button
                     className="icon-button"
                     aria-label="Duplicate"
@@ -1992,6 +2268,46 @@ export default function Studio() {
                   />
                 ) : mode === "scene" || inspector === "design" ? (
                   <>
+                    {selectedGroup && (
+                      <section className="property-section group-section">
+                        <div className="section-heading">
+                          <h3>Folder</h3>
+                          <span className="subtle-badge">
+                            {membersOf(selectedGroup).length} assets
+                          </span>
+                        </div>
+                        <input
+                          className="text-input no-margin"
+                          aria-label="Folder name"
+                          value={selectedGroup.name}
+                          maxLength={60}
+                          onChange={(e) =>
+                            renameGroup(selectedGroup.id, e.target.value || "Group")
+                          }
+                        />
+                        <div className="two-fields mt-3">
+                          <button
+                            className="secondary-button"
+                            title="Copy the folder with all of its assets (⌘D)"
+                            onClick={() => duplicate()}
+                          >
+                            <Copy size={15} /> Duplicate
+                          </button>
+                          <button
+                            className="secondary-button"
+                            title="Remove the folder, keep the assets (⌘⇧G)"
+                            onClick={() => ungroup([selectedGroup])}
+                          >
+                            <FolderMinus size={15} /> Ungroup
+                          </button>
+                        </div>
+                        <p className="help-text">
+                          Moving, aligning, hiding, locking, and deleting apply
+                          to every asset in the folder. The folder becomes a
+                          parent object in the Unity prefab.
+                        </p>
+                      </section>
+                    )}
                     {mode === "scene" && (
                       <section className="property-section">
                         <h3>Position on screen</h3>

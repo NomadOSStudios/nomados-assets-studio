@@ -130,6 +130,7 @@ export const designSchema = z.object({
     .optional(),
   locked: z.boolean().default(false),
   hidden: z.boolean().default(false),
+  group: z.string().max(60).optional(),
   themeId: z.string().max(80).optional(),
   x: num(0, 4096).default(300),
   y: num(0, 4096).default(260),
@@ -160,6 +161,12 @@ const fontSchema = z.object({
       /^data:(font\/(ttf|otf|woff|woff2)|application\/(x-font-ttf|x-font-opentype|font-sfnt|octet-stream));base64,[a-zA-Z0-9+/=]+$/,
     ),
 });
+const groupSchema = z.object({
+  id: z.string().min(1).max(60),
+  name: z.string().min(1).max(60),
+  collapsed: z.boolean().default(false),
+});
+export type AssetGroup = z.infer<typeof groupSchema>;
 const viewSchema = z.object({
   grid: num(2, 256).default(16),
   showGrid: z.boolean().default(false),
@@ -271,6 +278,7 @@ export const projectSchema = z
     activeScreen: z.string().max(60).optional(),
     fonts: z.array(fontSchema).max(12).default([]),
     view: viewSchema.default(defaultView),
+    groups: z.array(groupSchema).max(50).default([]),
   })
   .refine((p) => JSON.stringify(p).length <= 24000000, "Project is too large");
 export interface Project {
@@ -283,6 +291,7 @@ export interface Project {
   activeScreen: string;
   fonts: ProjectFont[];
   view: ViewSettings;
+  groups: AssetGroup[];
 }
 const starterPositions = [
   { x: 336, y: 270 },
@@ -307,6 +316,7 @@ export const initialProject: Project = {
   activeScreen: "screen-1",
   fonts: [],
   view: defaultView,
+  groups: [],
 };
 export function parseProject(v: unknown): Project {
   const p = projectSchema.parse(v);
@@ -324,8 +334,17 @@ export function parseProject(v: unknown): Project {
       ];
   const { screen: _legacy, ...rest } = p;
   void _legacy;
+  // Drop empty folders and references to folders that no longer exist.
+  const groups = p.groups.filter((g) => p.assets.some((a) => a.group === g.id));
+  const assets = p.assets.map((a) =>
+    a.group && !groups.some((g) => g.id === a.group)
+      ? { ...a, group: undefined }
+      : a,
+  );
   return {
     ...rest,
+    assets,
+    groups,
     screens,
     activeScreen: screens.some((s) => s.id === p.activeScreen)
       ? p.activeScreen!

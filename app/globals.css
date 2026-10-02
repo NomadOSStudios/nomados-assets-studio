@@ -1739,3 +1739,38 @@ svg {
 .canvas-controls .outline-toggle.off {
   color: #6f7a87;
 }
+
+/* Folders in the asset list */
+.asset-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.asset-row.nested {
+  margin-left: 18px;
+  width: calc(100% - 18px);
+}
+.group-row {
+  color: #c7cdd4;
+  padding-left: 6px;
+}
+.group-row.partial {
+  border-color: #3f4d33;
+}
+.group-row .chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.group-section {
+  background: #1d2420;
+}
+@media (max-width: 800px) {
+  .asset-group {
+    flex-direction: row;
+  }
+  .asset-row.nested {
+    margin-left: 0;
+    width: auto;
+  }
+}

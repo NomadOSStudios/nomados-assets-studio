@@ -33,6 +33,7 @@ npm run build
 - Eleven starting styles, saved custom styles, and explicit updates to assets linked to a saved style. Hover a saved style to delete it; linked assets keep their look.
 - Default, hover, pressed, and disabled state previews.
 - Text, system fonts, built-in icons, uploaded icons, and image textures.
+- Folders: select assets and press ⌘G (or the folder button) to group them like Photoshop layers. A folder can be collapsed, renamed, selected as a whole, hidden, locked, moved, aligned, duplicated with everything inside, dragged to reorder, or ungrouped with ⌘⇧G. Folders become parent objects in the Unity prefab.
 - Undo/redo, asset creation/duplication/removal, and a draggable screen builder. ⌘D duplicates, ⌘C and ⌘V copy and paste assets, and ⌘A selects everything on a screen. Assets can be locked, hidden, and reordered by dragging rows in the list.
 - Several screens per project (menu, HUD, pause…) sharing one asset library, each with its own layout. Custom screen dimensions (64–4096 px), common resolution presets, orientation swap, fit/zoom, rulers, an optional grid with snap-to-grid, and precise asset coordinates.
 - Solid, gradient, transparent, or uploaded image backgrounds, saved with the project.

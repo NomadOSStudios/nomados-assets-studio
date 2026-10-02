@@ -133,6 +133,8 @@ export interface Design {
   stateStyles?: StateStyles;
   locked: boolean;
   hidden: boolean;
+  /** Folder in the asset list, by group id. */
+  group?: string;
   themeId?: string;
   x?: number;
   y?: number;

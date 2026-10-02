@@ -11,7 +11,7 @@ public static class UIMAssetImporter
     [Serializable] private class Body { public float x, y, width, height; }
     [Serializable] private class Entry { public string file; public string name; public string state; public int width, height; public float left, bottom, right, top; public Body body; }
     [Serializable] private class TextInfo { public string kind; public string content; public float fontSize; public string color; public string align; public bool bold; public float lineHeight; public string font; }
-    [Serializable] private class Placement { public string name; public string kind; public string file; public float x, y, width, height; public TextInfo text; }
+    [Serializable] private class Placement { public string name; public string kind; public string file; public float x, y, width, height; public string group; public TextInfo text; }
     [Serializable] private class Screen { public string name; public float width, height; public Placement[] assets; }
     [Serializable] private class Manifest { public int version; public float scale; public float pixelsPerUnit; public Entry[] assets; public Screen screen; public Screen[] screens; }
 
@@ -62,14 +62,31 @@ public static class UIMAssetImporter
         var rootRect = (RectTransform)root.transform;
         rootRect.sizeDelta = new Vector2(screen.width, screen.height);
         var built = 0;
+        // Folders from the asset list become empty parents the size of the
+        // screen, so children keep their screen coordinates.
+        var folders = new System.Collections.Generic.Dictionary<string, RectTransform>();
         foreach (var placement in screen.assets)
         {
+            var parent = rootRect;
+            if (!string.IsNullOrEmpty(placement.group))
+            {
+                if (!folders.TryGetValue(placement.group, out parent))
+                {
+                    var folder = new GameObject(placement.group, typeof(RectTransform)) { layer = root.layer };
+                    parent = (RectTransform)folder.transform;
+                    parent.SetParent(rootRect, false);
+                    parent.anchorMin = parent.anchorMax = parent.pivot = new Vector2(0f, 1f);
+                    parent.anchoredPosition = Vector2.zero;
+                    parent.sizeDelta = new Vector2(screen.width, screen.height);
+                    folders[placement.group] = parent;
+                }
+            }
             // Screen coordinates are top-left, y down, at 1x.
             if (placement.text != null && !string.IsNullOrEmpty(placement.text.kind))
             {
                 var textObject = new GameObject(placement.name, typeof(RectTransform), typeof(CanvasRenderer)) { layer = root.layer };
                 var textRect = (RectTransform)textObject.transform;
-                textRect.SetParent(rootRect, false);
+                textRect.SetParent(parent, false);
                 textRect.anchorMin = textRect.anchorMax = textRect.pivot = new Vector2(0f, 1f);
                 textRect.anchoredPosition = new Vector2(placement.x, -placement.y);
                 textRect.sizeDelta = new Vector2(placement.width, placement.height);
@@ -82,7 +99,7 @@ public static class UIMAssetImporter
             if (!sprite) continue;
             var go = new GameObject(placement.name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)) { layer = root.layer };
             var rect = (RectTransform)go.transform;
-            rect.SetParent(rootRect, false);
+            rect.SetParent(parent, false);
             // The PNG holds padding around the body, so the image sits that much up-left.
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
             var bodyX = entry.body != null ? entry.body.x / scale : 0f;

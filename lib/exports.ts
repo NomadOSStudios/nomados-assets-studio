@@ -24,6 +24,7 @@ export async function exportAssets(
   selected: ButtonState,
   withText: boolean,
   screens: ExportScreen[] = [],
+  groups: { id: string; name: string }[] = [],
 ) {
   const files: { name: string; data: Blob | string }[] = [],
     entries: object[] = [],
@@ -78,6 +79,7 @@ export async function exportAssets(
         y: a.y ?? 0,
         width: a.width,
         height: a.height,
+        group: groups.find((g) => g.id === a.group)?.name,
         text: isText(a)
           ? {
               kind: a.kind,
