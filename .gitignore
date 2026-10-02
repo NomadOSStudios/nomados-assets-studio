@@ -49,3 +49,7 @@ next-env.d.ts
 icons-sliced/
 icons-sliced.zip
 icons.png
+
+# Extra icon sources; the app uses public/icons
+output/
+game-icons-new.zip

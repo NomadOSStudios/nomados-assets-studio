@@ -45,6 +45,9 @@ export const packIcons: PackIcon[] = [
   { name: "battery", label: "Battery", width: 110, height: 174 },
   { name: "potion-green", label: "Potion green", width: 146, height: 189 },
   { name: "fuel-can", label: "Fuel can", width: 166, height: 176 },
+  { name: "replay", label: "Replay", width: 182, height: 192 },
+  { name: "home", label: "Home", width: 192, height: 177 },
+  { name: "double-2x", label: "Double 2x", width: 192, height: 186 },
 ];
 export const isPackIcon = (icon: string) => icon.startsWith("pack:");
 export const packIconName = (icon: string) => icon.slice(5);
