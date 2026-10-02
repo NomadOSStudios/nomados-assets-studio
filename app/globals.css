@@ -1723,3 +1723,19 @@ svg {
   border-color: #b5eb68;
   background: #2e3829;
 }
+
+/* Selection outline toggle */
+.selection-box.hidden-outline {
+  border-color: transparent;
+}
+.selection-box.hidden-outline i {
+  display: none;
+}
+.canvas-controls .outline-toggle {
+  width: 24px;
+  height: 24px;
+  color: #b7eb70;
+}
+.canvas-controls .outline-toggle.off {
+  color: #6f7a87;
+}

@@ -55,6 +55,7 @@ import {
   Lock,
   LockOpen,
   Image,
+  SquareDashed,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -116,6 +117,7 @@ import {
 } from "@/lib/project";
 import { exportAssets, exportEffect } from "@/lib/exports";
 import { ensureFonts, readFontFile } from "@/lib/fonts";
+import { useBooleanPreference, writePreference } from "@/lib/preferences";
 
 type History = { past: Project[]; present: Project; future: Project[] };
 const kindIcons = {
@@ -326,6 +328,9 @@ export default function Studio() {
     [inspector, setInspector] = useState("design"),
     [screenInspector, setScreenInspector] = useState("screen"),
     [screenZoom, setScreenZoom] = useState("fit");
+  // Selection outline and handles; a browser preference, not project data.
+  const outline = useBooleanPreference("outline", true);
+  const setOutline = (value: boolean) => writePreference("outline", value);
   const [ready, setReady] = useState(false),
     [dirty, setDirty] = useState(false),
     [saveStatus, setSaveStatus] = useState("Opening project…"),
@@ -1351,6 +1356,11 @@ export default function Studio() {
       const meta = e.metaKey || e.ctrlKey,
         k = e.key.toLowerCase(),
         scene = mode === "scene";
+      if (!meta && !e.altKey && k === "o") {
+        e.preventDefault();
+        setOutline(!outline);
+        return;
+      }
       if (meta && k === "a" && scene) {
         e.preventDefault();
         const ids = placed.filter((a) => !a.locked).map((a) => a.id);
@@ -1802,6 +1812,7 @@ export default function Studio() {
                     zoom={screenZoom}
                     view={project.view}
                     revision={fontTick}
+                    outline={outline}
                     onSelect={select}
                     onMove={(moves) => place(moves)}
                     onResize={resizeOnScreen}
@@ -1814,10 +1825,12 @@ export default function Studio() {
                       width: `min(${((d.width + padding(d) * 2) * Number(zoom)) / 100}px, 92%)`,
                     }}
                   >
-                    <div className="selection-label">{d.name}</div>
+                    {outline && (
+                      <div className="selection-label">{d.name}</div>
+                    )}
                     <AssetCanvas key={fontTick} design={d} state={state} />
                     <div
-                      className="selection-box"
+                      className={`selection-box ${outline ? "" : "hidden-outline"}`}
                       style={{
                         left: `${(padding(d) / (d.width + padding(d) * 2)) * 100}%`,
                         right: `${(padding(d) / (d.width + padding(d) * 2)) * 100}%`,
@@ -1841,6 +1854,16 @@ export default function Studio() {
                   </div>
                 )}
                 <div className="canvas-controls">
+                  <button
+                    className={`icon-button outline-toggle ${outline ? "" : "off"}`}
+                    aria-pressed={outline}
+                    aria-label={outline ? "Hide selection outline" : "Show selection outline"}
+                    title={`${outline ? "Hide" : "Show"} selection outline (O)`}
+                    onClick={() => setOutline(!outline)}
+                  >
+                    <SquareDashed size={15} />
+                  </button>
+                  <span className="toolbar-divider" />
                   {mode !== "scene" && (
                     <div className="background-options">
                       {["dark", "light", "checker"].map((b) => (

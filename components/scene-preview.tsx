@@ -136,6 +136,7 @@ export function ScenePreview({
   zoom,
   view,
   revision = 0,
+  outline = true,
   onSelect,
   onMove,
   onResize,
@@ -149,6 +150,8 @@ export function ScenePreview({
   view: ViewSettings;
   /** Bump to repaint, for example after a project font finishes loading. */
   revision?: number;
+  /** Draw the selection outline and resize handles. */
+  outline?: boolean;
   onSelect: (ids: string[], primary: string | null) => void;
   onMove: (moves: { id: string; x: number; y: number }[]) => void;
   onResize: (id: string, rect: Rect) => void;
@@ -164,7 +167,9 @@ export function ScenePreview({
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [imageError, setImageError] = useState("");
   const ordered = orderedScreenAssets(assets);
-  const lead = assets.find((a) => a.id === primary && !a.locked);
+  const lead = outline
+    ? assets.find((a) => a.id === primary && !a.locked)
+    : undefined;
   const fit = Math.min(
     Math.max(40, size.width - 60) / screen.width,
     Math.max(40, size.height - 60) / screen.height,
@@ -209,7 +214,7 @@ export function ScenePreview({
         0,
         0,
       );
-      drawScreen(ctx, screen, assets, image, selection);
+      drawScreen(ctx, screen, assets, image, outline ? selection : []);
       const px = screen.width / canvas.width; // one device pixel in screen units
       if (view.showGrid && view.grid * scale >= 4) {
         ctx.save();
@@ -295,6 +300,7 @@ export function ScenePreview({
     view.grid,
     scale,
     revision,
+    outline,
   ]);
   // Rulers in screen pixels, redrawn whenever the zoom or size changes.
   useEffect(() => {
