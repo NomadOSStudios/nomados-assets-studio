@@ -30,9 +30,13 @@ export async function exportAssets(
     entries: object[] = [],
     firstFiles = new Map<string, string>();
   for (const [index, original] of assets.entries()) {
+    // Text off strips baked labels and decorative icons, so backgrounds
+    // slice cleanly; an Icon asset IS its icon and keeps it.
     const d = withText
       ? original
-      : { ...original, text: "", icon: "", iconData: "" };
+      : original.kind === "icon"
+        ? { ...original, text: "" }
+        : { ...original, text: "", icon: "", iconData: "" };
     await loadImages(d);
     let firstFile = "";
     for (const s of allStates && isButtonLike(d) ? states : [selected]) {
