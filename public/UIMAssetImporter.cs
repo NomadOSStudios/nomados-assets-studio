@@ -72,8 +72,8 @@ public static class UIMAssetImporter
             {
                 if (!folders.TryGetValue(placement.group, out parent))
                 {
-                    var folder = new GameObject(placement.group, typeof(RectTransform)) { layer = root.layer };
-                    parent = (RectTransform)folder.transform;
+                    var folderObject = new GameObject(placement.group, typeof(RectTransform)) { layer = root.layer };
+                    parent = (RectTransform)folderObject.transform;
                     parent.SetParent(rootRect, false);
                     parent.anchorMin = parent.anchorMax = parent.pivot = new Vector2(0f, 1f);
                     parent.anchoredPosition = Vector2.zero;
