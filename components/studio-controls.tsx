@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { isPackIcon } from "@/lib/icon-library";
 import {
   drawDesign,
   padding,
@@ -37,7 +38,8 @@ export function AssetCanvas({
       drawDesign(ctx, design, state);
     };
     paint();
-    if (design.texture || design.iconData)
+    // Pictures arrive asynchronously; repaint once they are in the cache.
+    if (design.texture || design.iconData || isPackIcon(design.icon))
       loadImages(design)
         .then(paint)
         .catch(() => {});

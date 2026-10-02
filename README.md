@@ -1,6 +1,6 @@
 # UIM Studio
 
-A personal, browser-based game UI asset designer. Create buttons, icon buttons, panels, windows, frames, speech bubbles, slots, progress and health bars, sliders, toggles, checkboxes, tab bars, badges, counters, titles, paragraphs, and animated effects, then export transparent assets for Unity.
+A personal, browser-based game UI asset designer. Create buttons, icon buttons, panels, windows, frames, speech bubbles, slots, progress and health bars, sliders, toggles, checkboxes, tab bars, badges, counters, icons, titles, paragraphs, and animated effects, then export transparent assets for Unity.
 
 ## Run locally
 
@@ -24,7 +24,8 @@ npm run build
 - Editable dimensions, individual corner radii, rounded or chamfered corners, linear or radial gradients with up to four extra colour stops, borders, shadow colour, and glow colour.
 - Seven surfaces: flat, raised 3D block, glossy sheen, chiseled bevel, embossed, engraved, and soft neumorphic lighting, each with a highlight strength and a light angle.
 - Textures with opacity, scale, and tiling, plus a grain overlay. A pixel-art mode renders at a chunky pixel size with no smoothing.
-- Text outline, text shadow, uppercase, letter spacing, ten built-in icons, and uploaded project fonts (TTF, OTF, WOFF, WOFF2) saved inside the project file.
+- Text outline, text shadow, uppercase, letter spacing, and uploaded project fonts (TTF, OTF, WOFF, WOFF2) saved inside the project file.
+- Icons: nine tintable vector glyphs, a built-in library of 40 full-colour game icons (coins, gems, chests, potions, weapons and more) shipped in `public/icons`, and your own uploads. Any button, slot, badge or counter can carry one at its own size, and the **Icon** asset kind places one on a screen by itself.
 - Per-state colour overrides for buttons: hover, pressed, and disabled can each use their own fill, border, and text colours.
 - Kind-specific controls: fill amount and colour for bars, sliders, and segmented health bars; on/off for toggles and checkboxes; active tab for tab bars; tail direction for speech bubbles.
 - Numeric controls support sliders, exact typing, and wheel adjustment while hovering over the value. Scroll up to increase and down to decrease; hold Shift for ten times the step.

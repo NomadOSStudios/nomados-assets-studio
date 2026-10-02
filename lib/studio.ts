@@ -1,3 +1,4 @@
+import { isPackIcon, packIconUrl } from "./icon-library";
 export type AssetKind =
   | "button"
   | "panel"
@@ -15,7 +16,8 @@ export type AssetKind =
   | "frame"
   | "iconbutton"
   | "counter"
-  | "healthbar";
+  | "healthbar"
+  | "icon";
 export type TextAlign = "left" | "center" | "right";
 export type Tail = "bottom" | "top" | "left" | "right";
 export type GradientType = "linear" | "radial";
@@ -101,6 +103,8 @@ export interface Design {
   texture: string;
   icon: string;
   iconData: string;
+  /** Icon size in pixels; 0 follows the font size. */
+  iconSize: number;
   shape: Shape;
   highlight: number;
   lightAngle: number;
@@ -473,6 +477,7 @@ export const baseDesign: Design = {
   texture: "",
   icon: "play",
   iconData: "",
+  iconSize: 0,
   shape: "round",
   highlight: 60,
   lightAngle: 120,
@@ -536,7 +541,11 @@ export function clamp(v: number, min: number, max: number) {
 /** Titles and paragraphs are text only: no shape, shadow, or 3D depth. */
 export const isText = (d: Design) =>
   d.kind === "title" || d.kind === "paragraph";
-export const depthOf = (d: Design) => (isText(d) ? 0 : d.depth);
+/** Standalone icon assets: a picture in a box, no shape either. */
+export const isIcon = (d: Design) => d.kind === "icon";
+/** Kinds drawn without the shape pipeline. */
+export const isShapeless = (d: Design) => isText(d) || isIcon(d);
+export const depthOf = (d: Design) => (isShapeless(d) ? 0 : d.depth);
 /** Kinds that export hover, pressed, and disabled states. */
 export const isButtonLike = (d: Design) =>
   d.kind === "button" || d.kind === "iconbutton";
@@ -551,7 +560,7 @@ function borderOutset(d: Design) {
       : 0;
 }
 export function padding(d: Design) {
-  if (isText(d)) return Math.ceil(Math.max(8, d.textOutline + 4));
+  if (isShapeless(d)) return Math.ceil(Math.max(8, d.textOutline + 4));
   // Slider knobs and bubble tails reach past the body into the padding.
   const extra =
     d.kind === "slider"
@@ -576,7 +585,9 @@ function tint(hex: string, amount: number) {
 const images = new Map<string, HTMLImageElement>();
 export async function loadImages(d: Design) {
   await Promise.all(
-    [d.texture, d.iconData].filter(Boolean).map(
+    [d.texture, d.iconData, isPackIcon(d.icon) ? packIconUrl(d.icon) : ""]
+      .filter(Boolean)
+      .map(
       (src) =>
         new Promise<void>((resolve, reject) => {
           if (images.has(src)) {
@@ -769,6 +780,63 @@ function noiseTile() {
   ctx.putImageData(img, 0, 0);
   return noise;
 }
+/** The raster for an uploaded or library icon, once loaded. */
+function pictureOf(d: Design) {
+  if (d.iconData) return images.get(d.iconData);
+  if (isPackIcon(d.icon)) return images.get(packIconUrl(d.icon));
+  return undefined;
+}
+// Draws a picture centred in a box, keeping its aspect ratio.
+function drawPicture(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cx: number,
+  cy: number,
+  box: number,
+  boxH = box,
+) {
+  const s = Math.min(box / img.width, boxH / img.height),
+    w = img.width * s,
+    h = img.height * s;
+  ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+}
+// Icon assets: one picture or vector glyph filling the box, nothing else.
+function drawIconBlock(ctx: CanvasRenderingContext2D, d: Design, state: ButtonState) {
+  const p = padding(d),
+    w = d.width,
+    h = d.height,
+    unit = Math.abs(ctx.getTransform().a) || 1,
+    picture = pictureOf(d);
+  ctx.save();
+  ctx.globalAlpha = state === "disabled" ? 0.42 : 1;
+  ctx.translate(p + w / 2, p + h / 2);
+  if (d.textShadow) {
+    ctx.shadowColor = "rgba(0,0,0,.55)";
+    ctx.shadowBlur = 3 * unit;
+    ctx.shadowOffsetY = 2 * unit;
+  }
+  if (picture) drawPicture(ctx, picture, 0, 0, w, h);
+  else if (d.icon && !isPackIcon(d.icon) && !d.iconData) {
+    const size = Math.min(w, h),
+      mode = iconPath(ctx, d.icon, size),
+      stroke = mode === "stroke" ? size * 0.16 : 0;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    if (d.textOutline > 0) {
+      ctx.strokeStyle = d.textOutlineColor;
+      ctx.lineWidth = stroke + d.textOutline * 2;
+      ctx.stroke();
+      ctx.shadowColor = "transparent";
+    }
+    ctx.fillStyle = d.textColor;
+    ctx.strokeStyle = d.textColor;
+    if (mode === "stroke") {
+      ctx.lineWidth = stroke;
+      ctx.stroke();
+    } else ctx.fill(mode === "evenodd" ? "evenodd" : "nonzero");
+  }
+  ctx.restore();
+}
 function withState(d: Design, state: ButtonState): Design {
   if (state === "normal" || !d.stateStyles) return d;
   const o = d.stateStyles[state];
@@ -808,6 +876,7 @@ function drawDesignRaw(
 ) {
   const d = withState(design, state);
   if (isText(d)) return drawTextBlock(ctx, d, state, withText);
+  if (isIcon(d)) return drawIconBlock(ctx, d, state);
   const p = padding(d),
     w = d.width,
     h = d.height,
@@ -1361,12 +1430,13 @@ function drawDesignRaw(
     }
   }
   const text = withText && d.kind !== "tabs" ? shown(d, d.text) : "",
-    icon = d.iconData ? "image" : d.icon;
+    picture = pictureOf(d),
+    icon = d.iconData || isPackIcon(d.icon) ? "image" : d.icon;
   applyFont(ctx, d);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const textW = text ? Math.min(ctx.measureText(text).width, w - 40) : 0,
-    iconSize = icon ? d.fontSize : 0,
+    iconSize = icon ? d.iconSize || d.fontSize : 0,
     gap = text && icon ? 12 : 0,
     total = textW + iconSize + gap,
     cy = band ? p + offset + band / 2 : p + h / 2 + offset;
@@ -1379,14 +1449,7 @@ function drawDesignRaw(
       ctx.shadowOffsetY = 2 * unit;
     }
     if (icon === "image") {
-      if (images.has(d.iconData))
-        ctx.drawImage(
-          images.get(d.iconData)!,
-          -iconSize / 2,
-          -iconSize / 2,
-          iconSize,
-          iconSize,
-        );
+      if (picture) drawPicture(ctx, picture, 0, 0, iconSize);
     } else {
       const mode = iconPath(ctx, icon, iconSize),
         stroke = mode === "stroke" ? iconSize * 0.16 : 0;

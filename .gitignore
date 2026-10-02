@@ -44,3 +44,8 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Raw icon pack sources; the app uses public/icons
+icons-sliced/
+icons-sliced.zip
+icons.png

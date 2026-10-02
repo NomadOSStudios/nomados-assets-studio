@@ -12,6 +12,7 @@ import {
   type ViewSettings,
 } from "./screen";
 import type { ProjectFont } from "./fonts";
+import { packIconExists } from "./icon-library";
 const num = (min: number, max: number) => z.number().finite().min(min).max(max);
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
 const image = z
@@ -48,6 +49,7 @@ export const designSchema = z.object({
     "iconbutton",
     "counter",
     "healthbar",
+    "icon",
   ]),
   // Thin tracks such as sliders go down to 8 px.
   width: num(8, 1024),
@@ -84,8 +86,15 @@ export const designSchema = z.object({
   includeText: z.boolean(),
   slice: num(0, 512),
   texture: image,
-  icon: z.enum(iconNames),
+  icon: z
+    .string()
+    .max(80)
+    .refine(
+      (v) => (iconNames as readonly string[]).includes(v) || packIconExists(v),
+      "Unknown icon",
+    ),
   iconData: image,
+  iconSize: num(0, 512).default(0),
   // Fields added after version one default so older projects open unchanged.
   shape: z.enum(["round", "cut"]).default("round"),
   highlight: num(0, 100).default(60),

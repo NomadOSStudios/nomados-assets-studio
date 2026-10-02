@@ -54,6 +54,7 @@ import {
   EyeOff,
   Lock,
   LockOpen,
+  Image,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -96,7 +97,7 @@ import {
   states,
   padding,
   depthOf,
-  isText,
+  isShapeless,
   isButtonLike,
   loadImages,
   renderDesign,
@@ -133,6 +134,7 @@ const kindIcons = {
   tabs: Columns3,
   badge: Tag,
   counter: Coins,
+  icon: Image,
   title: Type,
   paragraph: Pilcrow,
 } as const;
@@ -152,6 +154,7 @@ const kindLabels: Record<AssetKind, string> = {
   tabs: "Tabs",
   badge: "Badge",
   counter: "Counter",
+  icon: "Icon",
   title: "Title",
   paragraph: "Paragraph",
 };
@@ -171,12 +174,20 @@ const kindOrder: AssetKind[] = [
   "tabs",
   "badge",
   "counter",
+  "icon",
   "title",
   "paragraph",
 ];
 const kindDefaults: Record<AssetKind, Partial<Design>> = {
   button: { width: 288, height: 76, text: "PLAY GAME", icon: "play" },
-  iconbutton: { width: 72, height: 72, radius: 36, text: "", icon: "gear" },
+  iconbutton: {
+    width: 72,
+    height: 72,
+    radius: 36,
+    text: "",
+    icon: "pack:settings-gear",
+    iconSize: 44,
+  },
   panel: { width: 360, height: 240, text: "", icon: "" },
   window: {
     width: 440,
@@ -242,8 +253,17 @@ const kindDefaults: Record<AssetKind, Partial<Design>> = {
     height: 44,
     radius: 22,
     text: "1,250",
-    icon: "star",
+    icon: "pack:coin-gold",
+    iconSize: 30,
     fontSize: 18,
+  },
+  icon: {
+    width: 96,
+    height: 96,
+    text: "",
+    icon: "pack:coin-gold",
+    includeText: false,
+    slice: 0,
   },
   title: {
     width: 420,
@@ -1842,7 +1862,7 @@ export default function Studio() {
                   </span>
                 </div>
               </div>
-              {mode !== "scene" && !isText(d) && (
+              {mode !== "scene" && !isShapeless(d) && (
                 <div className="states-section">
                   <div className="states-heading">
                     <div>

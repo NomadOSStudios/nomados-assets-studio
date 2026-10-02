@@ -116,7 +116,7 @@ export function loadScreenImage(
 const layer = (a: Design) =>
   a.kind === "panel" || a.kind === "window"
     ? 0
-    : a.kind === "title" || a.kind === "paragraph"
+    : a.kind === "title" || a.kind === "paragraph" || a.kind === "icon"
       ? 2
       : 1;
 export function orderedScreenAssets(assets: Design[]) {

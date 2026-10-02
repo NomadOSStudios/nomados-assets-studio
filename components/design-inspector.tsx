@@ -5,6 +5,8 @@ import { Range, Color, Choice, NumberField } from "./studio-controls";
 import {
   iconNames,
   isButtonLike,
+  isIcon,
+  isShapeless,
   isText,
   surfaces,
   systemFonts,
@@ -19,6 +21,61 @@ import {
   type TextAlign,
 } from "@/lib/studio";
 import type { ProjectFont } from "@/lib/fonts";
+import {
+  isPackIcon,
+  packIconName,
+  packIconUrl,
+  packIcons,
+} from "@/lib/icon-library";
+
+// Thumbnail grid of the built-in game icons.
+function IconPicker({
+  value,
+  onPick,
+}: {
+  value: string;
+  onPick: (icon: string) => void;
+}) {
+  return (
+    <div className="icon-grid" role="listbox" aria-label="Game icon library">
+      {packIcons.map((p) => {
+        const id = `pack:${p.name}`;
+        return (
+          <button
+            key={p.name}
+            type="button"
+            role="option"
+            aria-selected={value === id}
+            className={`icon-cell ${value === id ? "selected" : ""}`}
+            title={p.label}
+            onClick={() => onPick(id)}
+          >
+            <img src={packIconUrl(id)} alt={p.label} loading="lazy" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+// The icon dropdown: library and uploads appear as their own entries.
+function iconChoice(d: Design) {
+  return d.iconData ? "upload" : isPackIcon(d.icon) ? "pack" : d.icon || "none";
+}
+function iconOptions(d: Design) {
+  return [
+    { value: "none", label: "No icon" },
+    ...(isPackIcon(d.icon)
+      ? [{ value: "pack", label: `Library · ${packIconName(d.icon)}` }]
+      : []),
+    ...(d.iconData ? [{ value: "upload", label: "Uploaded image" }] : []),
+    ...iconNames
+      .filter((v) => v)
+      .map((v) => ({
+        value: v,
+        label: `${v[0].toUpperCase() + v.slice(1)} · vector`,
+      })),
+  ];
+}
 
 const stateLabel = (s: ButtonState) =>
   s === "normal" ? "Default" : s[0].toUpperCase() + s.slice(1);
@@ -40,8 +97,10 @@ export function DesignInspector({
   onFontUpload: () => void;
   onFontRemove: (name: string) => void;
 }) {
-  // Titles and paragraphs have no shape, so only the text controls apply.
-  const text = isText(d);
+  // Titles, paragraphs, and icons have no shape, so those controls are hidden.
+  const text = isText(d),
+    iconKind = isIcon(d),
+    shapeless = isShapeless(d);
   // Kinds whose text colour drives a knob or check mark instead of a label.
   const noLabel = ["toggle", "checkbox", "slider", "healthbar"].includes(d.kind);
   const override =
@@ -101,7 +160,7 @@ export function DesignInspector({
             onChange={(height) => patch({ height })}
           />
         </div>
-        {!text && (
+        {!shapeless && (
           <>
             <div className="toggle-row">
               <label htmlFor="individual-corners">Individual corners</label>
@@ -218,7 +277,7 @@ export function DesignInspector({
           )}
         </section>
       )}
-      {!text && (
+      {!shapeless && (
         <section className="property-section">
           <div className="section-heading">
             <h3>Fill</h3>
@@ -377,7 +436,7 @@ export function DesignInspector({
           />
         </section>
       )}
-      {!text && (
+      {!shapeless && (
         <section className="property-section">
           <div className="section-heading">
             <h3>Border</h3>
@@ -419,7 +478,7 @@ export function DesignInspector({
           </p>
         </section>
       )}
-      {!text && (
+      {!shapeless && (
         <section className="property-section">
           <div className="section-heading">
             <h3>Depth & lighting</h3>
@@ -628,7 +687,84 @@ export function DesignInspector({
           </p>
         </section>
       )}
-      {!noLabel && (
+      {iconKind && (
+        <section className="property-section">
+          <div className="section-heading">
+            <h3>Icon</h3>
+          </div>
+          <IconPicker
+            value={d.iconData ? "" : d.icon}
+            onPick={(icon) => patch({ icon, iconData: "" })}
+          />
+          <div className="mt-3">
+            <div className="field-label">Vector icon</div>
+            <Choice
+              label="Icon"
+              value={iconChoice(d)}
+              options={iconOptions(d)}
+              onChange={(icon) => {
+                if (icon === "pack" || icon === "upload") return;
+                patch({ icon: icon === "none" ? "" : icon, iconData: "" });
+              }}
+            />
+          </div>
+          {!d.iconData && d.icon && !isPackIcon(d.icon) && (
+            <>
+              <div className="field-label mt-3">Icon color</div>
+              <Color
+                label="Icon color"
+                value={d.textColor}
+                onChange={(textColor) => patch({ textColor })}
+              />
+              <Range
+                label="Outline"
+                value={d.textOutline}
+                max={8}
+                step={0.5}
+                onChange={(textOutline) => patch({ textOutline })}
+              />
+              {d.textOutline > 0 && (
+                <div className="mt-3">
+                  <div className="field-label">Outline color</div>
+                  <Color
+                    label="Outline color"
+                    value={d.textOutlineColor}
+                    onChange={(textOutlineColor) => patch({ textOutlineColor })}
+                  />
+                </div>
+              )}
+            </>
+          )}
+          <div className="toggle-row">
+            <label htmlFor="icon-shadow">Drop shadow</label>
+            <Switch
+              id="icon-shadow"
+              checked={d.textShadow}
+              onCheckedChange={(textShadow) => patch({ textShadow })}
+            />
+          </div>
+          <div className="inline-actions">
+            <button className="text-button" onClick={() => onImage("iconData")}>
+              <Upload size={13} />
+              {d.iconData ? "Replace uploaded image" : "Upload your own image"}
+            </button>
+            {d.iconData && (
+              <button
+                className="icon-button"
+                aria-label="Remove uploaded icon"
+                onClick={() => patch({ iconData: "" })}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <p className="help-text">
+            The icon fills the box and keeps its aspect ratio, so resize the
+            box to scale it. Library icons keep their own colours.
+          </p>
+        </section>
+      )}
+      {!noLabel && !iconKind && (
         <section className="property-section">
           <div className="section-heading">
             <h3>{text ? "Text" : "Text & icon"}</h3>
@@ -818,23 +954,32 @@ export function DesignInspector({
           {!text && d.kind !== "tabs" && (
             <>
               <div className="mt-3">
+                <div className="field-label">Icon</div>
                 <Choice
                   label="Icon"
-                  value={d.icon || "none"}
-                  options={[
-                    { value: "none", label: "No icon" },
-                    ...iconNames
-                      .filter((v) => v)
-                      .map((v) => ({
-                        value: v,
-                        label: v[0].toUpperCase() + v.slice(1),
-                      })),
-                  ]}
-                  onChange={(icon) =>
-                    patch({ icon: icon === "none" ? "" : icon, iconData: "" })
-                  }
+                  value={iconChoice(d)}
+                  options={iconOptions(d)}
+                  onChange={(icon) => {
+                    if (icon === "pack" || icon === "upload") return;
+                    patch({ icon: icon === "none" ? "" : icon, iconData: "" });
+                  }}
                 />
               </div>
+              <div className="field-label mt-3">Game icon library</div>
+              <IconPicker
+                value={d.iconData ? "" : d.icon}
+                onPick={(icon) => patch({ icon, iconData: "" })}
+              />
+              <Range
+                label="Icon size"
+                value={d.iconSize}
+                max={256}
+                onChange={(iconSize) => patch({ iconSize })}
+              />
+              <p className="help-text">
+                0 matches the font size. Library icons and uploads keep their
+                own colours; vector icons use the text colour.
+              </p>
               <div className="inline-actions">
                 <button className="text-button" onClick={() => onImage("iconData")}>
                   <Upload size={13} />

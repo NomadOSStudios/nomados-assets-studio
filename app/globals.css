@@ -1692,3 +1692,34 @@ svg {
 .main-asset.pixel-grid canvas {
   image-rendering: pixelated;
 }
+
+/* Game icon library picker */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.icon-cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  border: 1px solid #383f49;
+  background: #272c33;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.icon-cell:hover {
+  border-color: #96b470;
+}
+.icon-cell.selected {
+  border-color: #b5eb68;
+  background: #2e3829;
+}
