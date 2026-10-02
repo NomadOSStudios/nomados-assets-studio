@@ -66,6 +66,8 @@ The importer preserves transparent effect padding and applies sprite borders. Ex
 
 Pixels per unit is 100 times the export scale, so a 2× or 4× pack keeps the same size and border thickness on screen as 1×.
 
+Kit exports share one PNG between assets that look identical (copies of a cell, a row of stars), so a screen with twenty-eight placements may ship far fewer files. The dialog picks the button states to render (all four, the three a phone can show, or the default only) and whether Unity imports the textures compressed, and it remembers its settings on this device. With **Bake text into images** off, the images carry no words and every asset's text travels in the manifest instead: titles and paragraphs become text objects, and buttons, badges and the rest get a child text label, matched to a TextMeshPro font asset by family name when one exists. Icons stay baked either way. The ZIP is named after the project, the screen and the time.
+
 ### Screen prefabs
 
 A kit export carries every screen's layout in the manifest: each screen's name and size, and every placed asset's name, kind, file, position and size at 1×, in draw order (panels first, text last). Titles and paragraphs also carry their text, font size, colour, alignment, and line height. In Unity, select `uim-manifest.json` and choose **Tools → UIM Studio → Build screen prefabs**: one prefab per screen appears beside the manifest, one Image per asset at its exact position and size, sliced where borders exist, with a Button and Sprite Swap states where the asset had states, and titles and paragraphs as editable text objects (TextMeshPro when the package is installed, otherwise UI Text). Re-export under the same file names and existing prefabs keep their sprites.
