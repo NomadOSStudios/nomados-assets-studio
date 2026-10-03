@@ -4,9 +4,9 @@ A local-first, browser-based designer for game UI. Draw buttons, panels, bars, i
 
 Nothing leaves your machine. Projects autosave in your browser and export as plain `.uim.json` files you can keep anywhere.
 
-![Designer](docs/designer.jpg)
+![A level-complete screen for a mobile game, built in the Screen builder: Arabic title, star rating, counters with library icons, badges, a bonus button, and replay and menu buttons, organised into folders](docs/hero.jpg)
 
-![Screen builder](docs/screen-builder.jpg)
+*A 1080 × 2228 mobile screen with 38 assets in six folders, designed entirely in the app.*
 
 ## Run it
 
@@ -33,6 +33,8 @@ Open http://localhost:5173. Other scripts: `npm run build` and `npm run start` f
 
 **Effects.** Confetti, sparkles, and seamless floating backgrounds with deterministic playback, exported as PNG frames or sprite sheets with timing metadata.
 
+![The Designer workspace with a button, its four states, and the properties panel](docs/designer.jpg)
+
 ## Build screens
 
 Open **Screen builder**. A project holds several screens that share one asset library; each screen remembers where its assets sit. Click an asset in the list to place it on the current screen.
@@ -45,6 +47,8 @@ Open **Screen builder**. A project holds several screens that share one asset li
 - Panels and windows always draw behind other assets; titles, paragraphs, and icons draw on top. Drag rows in the list to change the order in between.
 
 **Export screen** saves a flattened PNG of the current screen, and **Export all screens** saves one per screen.
+
+![The Screen builder with rulers, a selected button with handles, and the position controls](docs/screen-builder.jpg)
 
 ## Export to Unity
 
