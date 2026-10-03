@@ -1607,7 +1607,7 @@ export default function Studio() {
             <Layers2 size={21} />
           </span>
           <strong>
-            UIM<span>STUDIO</span>
+            NomadOS<span>ASSETS STUDIO</span>
           </strong>
         </div>
         <DropdownMenu>

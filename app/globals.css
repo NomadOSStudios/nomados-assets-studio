@@ -116,7 +116,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 198px;
+  min-width: 198px;
   flex-shrink: 0;
 }
 .brand-mark {
@@ -905,7 +905,7 @@ svg {
     grid-template-columns: 200px minmax(0, 1fr) 260px;
   }
   .brand {
-    width: 158px;
+    min-width: 158px;
   }
   .project-tag,
   .save-status {
@@ -941,7 +941,7 @@ svg {
     gap: 12px;
   }
   .brand {
-    width: auto;
+    min-width: 0;
   }
   .brand strong span,
   .project-name {

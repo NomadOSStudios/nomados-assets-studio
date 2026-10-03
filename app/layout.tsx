@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UIM Studio — Game UI Designer",
+  title: "NomadOS Assets Studio — Game UI Designer",
   description:
     "Design buttons, panels, and animated effects. Export transparent assets for your Unity game.",
   icons: {
